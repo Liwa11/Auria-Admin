@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -96,12 +95,6 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { state, toggleSidebar } = useSidebar()
   const isCollapsed = state === "collapsed"
-  const { user, logout } = useAuth()
-
-  const handleLogout = async () => {
-    await logout()
-    // router.replace('/login') is niet nodig, wordt in logout afgehandeld
-  }
 
   return (
     <Sidebar collapsible="icon" className="bg-gray-800 border-r border-gray-700">
@@ -152,40 +145,6 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* User Info and Logout */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <div className="p-3 border-t border-gray-700">
-              {!isCollapsed && user && (
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-green-600 text-white text-sm">
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
-                      {user.email || "Admin"}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {user.email}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                size="sm"
-                className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {!isCollapsed && "Uitloggen"}
-              </Button>
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
