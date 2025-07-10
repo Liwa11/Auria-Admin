@@ -22,8 +22,10 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Verwijder automatische redirect/spinner als user bestaat
-  }, [])
+    if (user && !loading) {
+      router.replace("/")
+    }
+  }, [user, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +84,7 @@ export default function LoginPage() {
       </div>
     )
   }
+  if (user) return null
 
   // Verwijder fallback/spinner als user bestaat
 

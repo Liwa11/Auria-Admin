@@ -18,7 +18,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Debug: toon user object vóór render
   console.log('Gebruiker geladen', user)
 
-  if (loading) {
+  if (loading || !user || pathname === "/login") {
     return null
   }
   return (

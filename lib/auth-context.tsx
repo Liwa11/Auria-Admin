@@ -96,9 +96,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
-    return null
-  }
+  useEffect(() => {
+    if (loading) return
+    if (!user) {
+      if (pathname !== "/login") router.replace("/login")
+    } else {
+      if (pathname === "/login") router.replace("/")
+    }
+  }, [user, loading, pathname, router])
+
+  if (loading) return null
+  if (!user) return null
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
       {children}
