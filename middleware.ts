@@ -14,15 +14,7 @@ export async function middleware(req: NextRequest) {
                        req.cookies.has('supabase-auth-token') ||
                        req.cookies.has('sb-auth-token')
 
-  // If the path is public and user is authenticated, redirect to dashboard
-  if (isPublicPath && hasAuthCookie) {
-    return NextResponse.redirect(new URL('/', req.url))
-  }
-
-  // If the path is not public and user is not authenticated, redirect to login
-  if (!isPublicPath && !hasAuthCookie) {
-    return NextResponse.redirect(new URL('/login', req.url))
-  }
+  // Verwijder alle login checks en redirects
 
   return NextResponse.next()
 }
