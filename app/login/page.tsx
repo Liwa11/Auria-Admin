@@ -84,6 +84,7 @@ export default function LoginPage() {
       </div>
     )
   }
+  // Alleen redirect als user geldig is, anders altijd loginformulier tonen
   if (user) return null
 
   // Verwijder fallback/spinner als user bestaat

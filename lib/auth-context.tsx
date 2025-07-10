@@ -106,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loading, pathname, router])
 
   if (loading) return null
+  // Op loginpagina: altijd children tonen als user niet geldig is
+  if (!user && pathname === "/login") return <>{children}</>
   if (!user) return null
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
