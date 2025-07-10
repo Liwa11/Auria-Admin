@@ -103,15 +103,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: "Ongeldige inloggegevens" }
       }
 
+      // Log user.id voor debug
+      console.log("[LOGIN] Supabase user.id =", data.user?.id)
+
       // Check of user bestaat in admin_users (op id)
       let { data: adminUser, error: adminError } = await supabase
         .from("admin_users")
         .select("*")
-        .eq("id", data.user.id)
-        .single()
+        .eq("id", String(data.user?.id))
+        .maybeSingle()
 
       // Debug: toon resultaat van admin_users query
-      console.log("[LOGIN] admin_users query result:", adminUser)
+      console.log("[LOGIN] adminUser result =", adminUser, "error =", adminError)
       if (adminError) {
         console.error("[LOGIN] admin_users fetch error:", adminError)
       }
