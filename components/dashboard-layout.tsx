@@ -32,7 +32,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Debug: log als user expliciet null is (niet gevonden in admin_users)
   if (user === null) {
-    console.log('adminUser is null: niet gevonden in admin_users')
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <h1 className="text-2xl font-bold mb-4">Geen toegang</h1>
+          <p className="text-gray-400 mb-4">Je account is niet gevonden in admin_users. Neem contact op met de beheerder.</p>
+          <a href="/login" className="inline-block mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Uitloggen</a>
+        </div>
+      </div>
+    )
   }
 
   // Toegangscontrole op rol
