@@ -42,7 +42,7 @@ export default function GebruikersbeheerPage() {
       const { data, error } = await supabase
         .from("admin_users")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("aangemaakt_op", { ascending: false })
 
       if (error) throw error
       setAdmins(data || [])
