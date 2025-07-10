@@ -15,6 +15,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
   }, [user, loading, pathname])
 
+  // Debug: toon user object vóór render
+  console.log('Gebruiker geladen', user)
+
   // Show loading spinner while checking authentication
   if (loading) {
     return (
@@ -29,7 +32,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // If user is not authenticated and not on login page, redirect to login
   if (!user && pathname !== "/login") {
-    // Instead of returning null, show a message and redirect button
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center text-white">
@@ -41,6 +43,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           >
             Naar Login
           </a>
+        </div>
+      </div>
+    )
+  }
+
+  // Toegangscontrole op rol
+  if (user && user.rol !== 'admin' && user.rol !== 'agent') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <h1 className="text-2xl font-bold mb-4">Geen toegang</h1>
+          <p className="text-gray-400 mb-4">Je account heeft geen toegang tot het dashboard (rol: {user.rol ?? 'onbekend'}).</p>
         </div>
       </div>
     )
