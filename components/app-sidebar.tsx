@@ -167,7 +167,7 @@ export function AppSidebar() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
-                      {user.name}
+                      {user.email || "Admin"}
                     </p>
                     <p className="text-xs text-gray-400 truncate">
                       {user.email}
