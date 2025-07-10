@@ -31,14 +31,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // Check if user exists in admin_users table
+      // Log user.id voor debug
+      console.log("Supabase user.id:", authUser.id)
+
+      // Check if user exists in admin_users table (op id)
       const { data: adminUser, error: adminError } = await supabase
         .from("admin_users")
         .select("*")
-        .eq("email", authUser.email)
+        .eq("id", authUser.id)
         .single()
 
       if (adminError || !adminUser) {
+        console.error("Gebruiker niet gevonden in admin_users voor id:", authUser.id)
         await supabase.auth.signOut()
         setUser(null)
         return
@@ -65,42 +69,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
 
-      // First, check if user exists in admin_users table
-      const { data: adminUser, error: adminError } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("email", email)
-        .single()
-
-      if (adminError || !adminUser) {
-        return { success: false, error: "Geen toegang. Contacteer de beheerder." }
-      }
-
-      // Try to sign in with Supabase Auth
+      // Probeer eerst in te loggen met Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
+      if (error || !data.user) {
         return { success: false, error: "Ongeldige inloggegevens" }
       }
 
-      if (data.user) {
-        // Update last login
-        await supabase
-          .from("admin_users")
-          .update({ 
-            last_login: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", adminUser.id)
+      // Log user.id voor debug
+      console.log("Supabase user.id (login):", data.user.id)
 
-        setUser(adminUser)
-        return { success: true }
+      // Check of user bestaat in admin_users (op id)
+      const { data: adminUser, error: adminError } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("id", data.user.id)
+        .single()
+
+      if (adminError || !adminUser) {
+        return { success: false, error: "Geen toegang. Je account is niet geautoriseerd als admin gebruiker. Neem contact op met de beheerder." }
       }
 
-      return { success: false, error: "Inloggen mislukt" }
+      // Update last login
+      await supabase
+        .from("admin_users")
+        .update({ 
+          last_login: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", adminUser.id)
+
+      setUser(adminUser)
+      return { success: true }
     } catch (error) {
       return { success: false, error: "Er is een fout opgetreden" }
     } finally {
