@@ -18,31 +18,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
 
   const checkAuth = async () => {
     try {
       setLoading(true)
+      setError(null)
       
       // Check if user is authenticated with Supabase Auth
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !authUser) {
         setUser(null)
+        setError("Niet ingelogd of authenticatie mislukt.")
         return
       }
 
       // Log user.id voor debug
-      console.log("Supabase user.id:", authUser.id)
+      console.log("Supabase user.id (checkAuth):", authUser.id)
 
       // Check if user exists in admin_users table (op id)
-      const { data: adminUser, error: adminError } = await supabase
+      const { data: adminUser, error: adminError, status } = await supabase
         .from("admin_users")
         .select("*")
         .eq("id", authUser.id)
         .single()
 
       if (adminError || !adminUser) {
-        console.error("Gebruiker niet gevonden in admin_users voor id:", authUser.id)
+        console.error("Gebruiker niet gevonden in admin_users voor id:", authUser.id, adminError)
+        setError(`Geen toegang: jouw account (${authUser.id}) bestaat niet in admin_users. Neem contact op met de beheerder.`)
         await supabase.auth.signOut()
         setUser(null)
         return
@@ -58,8 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", adminUser.id)
 
       setUser(adminUser)
-    } catch (error) {
+    } catch (error: any) {
       setUser(null)
+      setError(error?.message || "Onbekende fout bij authenticatie.")
+      if (process.env.NODE_ENV === "development") {
+        console.error("[DEV] Auth error:", error)
+      }
     } finally {
       setLoading(false)
     }
@@ -68,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setLoading(true)
+      setError(null)
 
       // Probeer eerst in te loggen met Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -76,6 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (error || !data.user) {
+        setError("Ongeldige inloggegevens")
+        if (process.env.NODE_ENV === "development") {
+          console.error("[DEV] Login error:", error)
+        }
         return { success: false, error: "Ongeldige inloggegevens" }
       }
 
@@ -83,13 +96,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Supabase user.id (login):", data.user.id)
 
       // Check of user bestaat in admin_users (op id)
-      const { data: adminUser, error: adminError } = await supabase
+      const { data: adminUser, error: adminError, status } = await supabase
         .from("admin_users")
         .select("*")
         .eq("id", data.user.id)
         .single()
 
       if (adminError || !adminUser) {
+        setError(`Geen toegang: jouw account (${data.user.id}) bestaat niet in admin_users. Neem contact op met de beheerder.`)
+        if (process.env.NODE_ENV === "development") {
+          console.error("[DEV] admin_users fetch error:", adminError)
+        }
         return { success: false, error: "Geen toegang. Je account is niet geautoriseerd als admin gebruiker. Neem contact op met de beheerder." }
       }
 
@@ -104,7 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(adminUser)
       return { success: true }
-    } catch (error) {
+    } catch (error: any) {
+      setError(error?.message || "Onbekende fout bij login.")
+      if (process.env.NODE_ENV === "development") {
+        console.error("[DEV] Login catch error:", error)
+      }
       return { success: false, error: "Er is een fout opgetreden" }
     } finally {
       setLoading(false)
@@ -139,6 +160,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
+      {error && (
+        <div style={{ color: 'red', background: '#fff3f3', padding: 12, borderRadius: 6, margin: 8, fontWeight: 'bold' }}>
+          {error}
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   )
