@@ -18,34 +18,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Debug: toon user object vóór render
   console.log('Gebruiker geladen', user)
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Fallback: toon loading zolang user nog undefined is (nog niet opgehaald)
+  if (typeof user === 'undefined') {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3 text-white">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Laden...</span>
+          <span>Gebruiker laden...</span>
         </div>
       </div>
     )
   }
 
-  // If user is not authenticated and not on login page, redirect to login
-  if (!user && pathname !== "/login") {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-2xl font-bold mb-4">Niet ingelogd</h1>
-          <p className="text-gray-400 mb-4">Je moet inloggen om toegang te krijgen tot het dashboard.</p>
-          <a 
-            href="/login" 
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-          >
-            Naar Login
-          </a>
-        </div>
-      </div>
-    )
+  // Debug: log als user expliciet null is (niet gevonden in admin_users)
+  if (user === null) {
+    console.log('adminUser is null: niet gevonden in admin_users')
   }
 
   // Toegangscontrole op rol
