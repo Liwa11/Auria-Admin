@@ -27,17 +27,11 @@ function LoginLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = typeof window !== "undefined" ? window.location.pathname : ""
-  // Fallback voor SSR/SSG: render children direct
   return (
     <html lang="nl">
       <body>
         <AuthProvider>
-          {pathname === "/login" ? (
-            <LoginLayout>{children}</LoginLayout>
-          ) : (
-            <DashboardLayout>{children}</DashboardLayout>
-          )}
+          <DashboardLayout>{children}</DashboardLayout>
         </AuthProvider>
       </body>
     </html>
