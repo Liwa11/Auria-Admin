@@ -34,7 +34,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // If user is not authenticated and not on login page, redirect to login
   if (!user && pathname !== "/login") {
     console.log("DashboardLayout - No user, redirecting to login")
-    return null // This will trigger a redirect in the login page
+    // Instead of returning null, show a message and redirect button
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Niet ingelogd</h1>
+          <p className="text-gray-400 mb-4">Je moet inloggen om toegang te krijgen tot het dashboard.</p>
+          <a 
+            href="/login" 
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+          >
+            Naar Login
+          </a>
+        </div>
+      </div>
+    )
   }
 
   // If user is authenticated and on login page, redirect to dashboard
