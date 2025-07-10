@@ -147,6 +147,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(adminUser)
+      // Na succesvolle login en laden van adminUser, push naar dashboard
+      if (adminUser && data.user) {
+        router.push("/dashboard")
+      }
       return { success: true }
     } catch (error: any) {
       setError(error?.message || "Onbekende fout bij login.")
