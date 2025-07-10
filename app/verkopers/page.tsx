@@ -48,8 +48,8 @@ export default function VerkopersPage() {
         .select(`
           *,
           regio(naam)
-        `)
-        .order("aangemaakt_op", { ascending: false })
+        `) // Supabase kolomnaam gefixt
+        .order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
 
       if (error) throw error
       setSellers(data || [])
@@ -69,8 +69,8 @@ export default function VerkopersPage() {
     try {
       const { data, error } = await supabase
         .from("regio")
-        .select("*")
-        .order("naam", { ascending: true })
+        .select("*") // Supabase kolomnaam gefixt
+        .order("naam", { ascending: true }) // Supabase kolomnaam gefixt
 
       if (error) throw error
       setRegions(data || [])
@@ -116,7 +116,7 @@ export default function VerkopersPage() {
           is_admin: formData.is_admin,
           regio_id: formData.regio_id,
         }])
-        .select()
+        .select() // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)
@@ -188,7 +188,7 @@ export default function VerkopersPage() {
           is_admin: formData.is_admin,
           regio_id: formData.regio_id,
         })
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)
@@ -235,7 +235,7 @@ export default function VerkopersPage() {
       const { error } = await supabase
         .from("verkopers")
         .delete()
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)

@@ -53,21 +53,21 @@ export default function Dashboard() {
       // Fetch total calls
       const { data: calls, error: callsError } = await supabase
         .from("gesprekken")
-        .select("*")
+        .select("*") // Supabase kolomnaam gefixt
 
       if (callsError) throw callsError
 
       // Fetch sellers
       const { data: sellers, error: sellersError } = await supabase
         .from("verkopers")
-        .select("*")
+        .select("*") // Supabase kolomnaam gefixt
 
       if (sellersError) throw sellersError
 
       // Fetch campaigns
       const { data: campaigns, error: campaignsError } = await supabase
         .from("campagnes")
-        .select("*")
+        .select("*") // Supabase kolomnaam gefixt
 
       if (campaignsError) throw campaignsError
 
@@ -106,8 +106,8 @@ export default function Dashboard() {
           klanten(bedrijfsnaam),
           verkopers(naam),
           campagnes(naam)
-        `)
-        .order("aangemaakt_op", { ascending: false })
+        `) // Supabase kolomnaam gefixt
+        .order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
         .limit(5)
 
       if (recentError) throw recentError

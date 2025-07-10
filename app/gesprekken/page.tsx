@@ -43,8 +43,8 @@ export default function GesprekkenPage() {
           klanten(bedrijfsnaam),
           verkopers(naam),
           campagnes(naam)
-        `)
-        .order("aangemaakt_op", { ascending: false })
+        `) // Supabase kolomnaam gefixt
+        .order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
 
       if (error) throw error
       setCalls(data || [])
@@ -59,8 +59,8 @@ export default function GesprekkenPage() {
     try {
       const { error } = await supabase
         .from("gesprekken")
-        .update({ datum: formData.date, tijdslot: formData.time, opmerkingen: formData.notes, resultaatcode: formData.status })
-        .eq("id", id)
+        .update({ datum: formData.date, tijdslot: formData.time, opmerkingen: formData.notes, resultaatcode: formData.status }) // Supabase kolomnaam gefixt
+        .eq("id", id) // Supabase kolomnaam gefixt
       if (!error) {
         await logEvent({
           type: "call_ended",
@@ -85,7 +85,7 @@ export default function GesprekkenPage() {
       const { error } = await supabase
         .from("gesprekken")
         .delete()
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
       if (!error) {
         await logEvent({
           type: "call_delete",

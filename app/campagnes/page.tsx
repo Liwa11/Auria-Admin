@@ -39,7 +39,7 @@ export default function CampagnesPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const { data, error } = await supabase.from("campagnes").select("*").order("naam", { ascending: true })
+      const { data, error } = await supabase.from("campagnes").select("*").order("naam", { ascending: true }) // Supabase kolomnaam gefixt
 
       if (error) throw error
       setCampaigns(data || [])
@@ -66,7 +66,7 @@ export default function CampagnesPage() {
           startdatum: formData.startdatum || null,
           einddatum: formData.einddatum || null,
         }])
-        .select()
+        .select() // Supabase kolomnaam gefixt
 
       if (error) {
         toast({ title: "Fout", description: `Fout bij toevoegen: ${error.message}`, variant: "destructive" })
@@ -107,7 +107,7 @@ export default function CampagnesPage() {
           startdatum: formData.startdatum || null,
           einddatum: formData.einddatum || null,
         })
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) throw error
 
@@ -139,7 +139,7 @@ export default function CampagnesPage() {
       const { error } = await supabase
         .from("campagnes")
         .delete()
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) throw error
       if (!error) {

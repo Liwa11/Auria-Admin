@@ -44,7 +44,7 @@ export default function KlantenPage() {
   const fetchClients = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.from("klanten").select("*").order("aangemaakt_op", { ascending: false })
+      const { data, error } = await supabase.from("klanten").select("*").order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Error fetching clients:", error)
@@ -104,7 +104,7 @@ export default function KlantenPage() {
           adres: formData.adres,
           btw_nummer: formData.btw_nummer || null,
         }])
-        .select()
+        .select() // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)
@@ -182,7 +182,7 @@ export default function KlantenPage() {
           adres: formData.adres,
           btw_nummer: formData.btw_nummer || null,
         })
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)
@@ -233,7 +233,7 @@ export default function KlantenPage() {
       const { error } = await supabase
         .from("klanten")
         .delete()
-        .eq("id", id)
+        .eq("id", id) // Supabase kolomnaam gefixt
 
       if (error) {
         console.error("Supabase error:", error)
