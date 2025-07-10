@@ -100,6 +100,7 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     await logout()
+    // router.replace('/login') is niet nodig, wordt in logout afgehandeld
   }
 
   return (

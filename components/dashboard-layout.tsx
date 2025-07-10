@@ -18,54 +18,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Debug: toon user object vóór render
   console.log('Gebruiker geladen', user)
 
-  // Fallback: toon loading zolang user nog undefined is (nog niet opgehaald)
-  if (typeof user === 'undefined') {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="flex items-center gap-3 text-white">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Gebruiker laden...</span>
+          <span>Laden...</span>
         </div>
       </div>
     )
   }
-
-  // Debug: log als user expliciet null is (niet gevonden in admin_users)
-  if (user === null) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-red-500">
-          <h1 className="text-2xl font-bold mb-4">Geen toegang</h1>
-          <p className="text-gray-400 mb-4">Je account is niet gevonden in admin_users. Neem contact op met de beheerder.</p>
-          <a href="/login" className="inline-block mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Uitloggen</a>
-        </div>
-      </div>
-    )
-  }
-
-  // Toegangscontrole op rol
-  if (user && user.rol !== 'admin' && user.rol !== 'agent') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-red-500">
-          <h1 className="text-2xl font-bold mb-4">Geen toegang</h1>
-          <p className="text-gray-400 mb-4">Je account heeft geen toegang tot het dashboard (rol: {user.rol ?? 'onbekend'}).</p>
-        </div>
-      </div>
-    )
-  }
-
-  // If user is authenticated and on login page, redirect to dashboard
-  if (user && pathname === "/login") {
-    return null // This will trigger a redirect in the login page
-  }
-
-  // If on login page, show only the login content without sidebar
-  if (pathname === "/login") {
-    return <>{children}</>
-  }
-
-  // Show the main app layout with sidebar for authenticated users
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-gray-900">
