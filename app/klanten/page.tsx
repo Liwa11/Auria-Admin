@@ -17,11 +17,11 @@ export default function KlantenPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [formData, setFormData] = useState({
-    name: "",
+    bedrijfsnaam: "",
     email: "",
-    phone: "",
-    address: "",
-    vatNumber: "",
+    telefoon: "",
+    adres: "",
+    btw_nummer: "",
   })
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
@@ -76,7 +76,7 @@ export default function KlantenPage() {
       console.log("Adding client with data:", formData)
       
       // Validate required fields
-      if (!formData.name || !formData.phone) {
+      if (!formData.bedrijfsnaam || !formData.telefoon) {
         toast({
           title: "Fout",
           description: "Bedrijfsnaam en telefoon zijn verplicht",
@@ -90,7 +90,7 @@ export default function KlantenPage() {
         return;
       }
 
-      if (!/^[0-9\-\+ ]{6,}$/.test(formData.phone)) {
+      if (!/^[0-9\-\+ ]{6,}$/.test(formData.telefoon)) {
         toast({ title: 'Fout', description: 'Ongeldig telefoonnummer', variant: 'destructive' });
         return;
       }
@@ -98,11 +98,11 @@ export default function KlantenPage() {
       const { data, error } = await supabase
         .from("klanten")
         .insert([{
-          bedrijfsnaam: formData.name,
+          bedrijfsnaam: formData.bedrijfsnaam,
           email: formData.email,
-          telefoon: formData.phone,
-          adres: formData.address,
-          btw_nummer: formData.vatNumber || null,
+          telefoon: formData.telefoon,
+          adres: formData.adres,
+          btw_nummer: formData.btw_nummer || null,
         }])
         .select()
 
@@ -117,7 +117,7 @@ export default function KlantenPage() {
       }
 
       console.log("Client added successfully:", data)
-      setFormData({ name: "", email: "", phone: "", address: "", vatNumber: "" })
+      setFormData({ bedrijfsnaam: "", email: "", telefoon: "", adres: "", btw_nummer: "" })
       setShowAddForm(false)
       
       // Refresh the clients list
@@ -126,12 +126,12 @@ export default function KlantenPage() {
         await logEvent({
           type: "client_add",
           status: "success",
-          message: `Nieuwe klant toegevoegd: ${formData.name}`,
-          data: { klantnaam: formData.name, adres: formData.address, email: formData.email, telefoon: formData.phone },
+          message: `Nieuwe klant toegevoegd: ${formData.bedrijfsnaam}`,
+          data: { klantnaam: formData.bedrijfsnaam, adres: formData.adres, email: formData.email, telefoon: formData.telefoon },
         })
         toast({
           title: "Succes",
-          description: `Nieuwe klant toegevoegd: ${formData.name}`,
+          description: `Nieuwe klant toegevoegd: ${formData.bedrijfsnaam}`,
         })
       }
     } catch (error) {
@@ -144,8 +144,8 @@ export default function KlantenPage() {
       await logEvent({
         type: "client_add",
         status: "error",
-        message: `Fout bij toevoegen klant: ${formData.name}`,
-        data: { klantnaam: formData.name, adres: formData.address, error },
+        message: `Fout bij toevoegen klant: ${formData.bedrijfsnaam}`,
+        data: { klantnaam: formData.bedrijfsnaam, adres: formData.adres, error },
       })
     }
   }
@@ -154,7 +154,7 @@ export default function KlantenPage() {
     try {
       setError(null)
       
-      if (!formData.name || !formData.phone) {
+      if (!formData.bedrijfsnaam || !formData.telefoon) {
         toast({
           title: "Fout",
           description: "Bedrijfsnaam en telefoon zijn verplicht",
@@ -168,7 +168,7 @@ export default function KlantenPage() {
         return;
       }
 
-      if (!/^[0-9\-\+ ]{6,}$/.test(formData.phone)) {
+      if (!/^[0-9\-\+ ]{6,}$/.test(formData.telefoon)) {
         toast({ title: 'Fout', description: 'Ongeldig telefoonnummer', variant: 'destructive' });
         return;
       }
@@ -176,11 +176,11 @@ export default function KlantenPage() {
       const { error } = await supabase
         .from("klanten")
         .update({
-          bedrijfsnaam: formData.name,
+          bedrijfsnaam: formData.bedrijfsnaam,
           email: formData.email,
-          telefoon: formData.phone,
-          adres: formData.address,
-          btw_nummer: formData.vatNumber || null,
+          telefoon: formData.telefoon,
+          adres: formData.adres,
+          btw_nummer: formData.btw_nummer || null,
         })
         .eq("id", id)
 
@@ -195,18 +195,18 @@ export default function KlantenPage() {
       }
 
       setEditingId(null)
-      setFormData({ name: "", email: "", phone: "", address: "", vatNumber: "" })
+      setFormData({ bedrijfsnaam: "", email: "", telefoon: "", adres: "", btw_nummer: "" })
       await fetchClients()
       if (!error) {
         await logEvent({
           type: "client_edit",
           status: "success",
-          message: `Klant gewijzigd: ${formData.name}`,
-          data: { klantnaam: formData.name, adres: formData.address, email: formData.email, telefoon: formData.phone },
+          message: `Klant gewijzigd: ${formData.bedrijfsnaam}`,
+          data: { klantnaam: formData.bedrijfsnaam, adres: formData.adres, email: formData.email, telefoon: formData.telefoon },
         })
         toast({
           title: "Succes",
-          description: `Klant gewijzigd: ${formData.name}`,
+          description: `Klant gewijzigd: ${formData.bedrijfsnaam}`,
         })
       }
     } catch (error) {
@@ -219,8 +219,8 @@ export default function KlantenPage() {
       await logEvent({
         type: "client_edit",
         status: "error",
-        message: `Fout bij wijzigen klant: ${formData.name}`,
-        data: { klantnaam: formData.name, adres: formData.address, error },
+        message: `Fout bij wijzigen klant: ${formData.bedrijfsnaam}`,
+        data: { klantnaam: formData.bedrijfsnaam, adres: formData.adres, error },
       })
     }
   }
@@ -277,17 +277,17 @@ export default function KlantenPage() {
   const startEdit = (client: any) => {
     setEditingId(client.id)
     setFormData({
-      name: client.bedrijfsnaam,
+      bedrijfsnaam: client.bedrijfsnaam,
       email: client.email,
-      phone: client.telefoon,
-      address: client.adres,
-      vatNumber: client.btw_nummer || "",
+      telefoon: client.telefoon,
+      adres: client.adres,
+      btw_nummer: client.btw_nummer || "",
     })
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setFormData({ name: "", email: "", phone: "", address: "", vatNumber: "" })
+    setFormData({ bedrijfsnaam: "", email: "", telefoon: "", adres: "", btw_nummer: "" })
     setError(null)
   }
 
@@ -338,8 +338,8 @@ export default function KlantenPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Bedrijfsnaam *</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.bedrijfsnaam}
+                  onChange={(e) => setFormData({ ...formData, bedrijfsnaam: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Bedrijfsnaam"
                   required
@@ -349,8 +349,8 @@ export default function KlantenPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Telefoon *</label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.telefoon}
+                  onChange={(e) => setFormData({ ...formData, telefoon: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="+32 123 456 789"
                   required
@@ -371,8 +371,8 @@ export default function KlantenPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Adres</label>
                 <input
                   type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  value={formData.adres}
+                  onChange={(e) => setFormData({ ...formData, adres: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Straat, postcode stad"
                 />
@@ -381,8 +381,8 @@ export default function KlantenPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">BTW-nummer (optioneel)</label>
                 <input
                   type="text"
-                  value={formData.vatNumber}
-                  onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
+                  value={formData.btw_nummer}
+                  onChange={(e) => setFormData({ ...formData, btw_nummer: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="BE0123456789"
                 />
@@ -392,7 +392,7 @@ export default function KlantenPage() {
               <Button 
                 className="bg-green-600 hover:bg-green-700"
                 onClick={handleAddClient}
-                disabled={!formData.name || !formData.phone}
+                disabled={!formData.bedrijfsnaam || !formData.telefoon}
               >
                 <Save className="h-4 w-4 mr-2" />
                 Toevoegen
@@ -445,8 +445,8 @@ export default function KlantenPage() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">Bedrijfsnaam *</label>
                           <input
                             type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            value={formData.bedrijfsnaam}
+                            onChange={(e) => setFormData({ ...formData, bedrijfsnaam: e.target.value })}
                             className="w-full p-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
                           />
@@ -455,8 +455,8 @@ export default function KlantenPage() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">Telefoon *</label>
                           <input
                             type="tel"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            value={formData.telefoon}
+                            onChange={(e) => setFormData({ ...formData, telefoon: e.target.value })}
                             className="w-full p-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
                             pattern="[0-9\-\+ ]{6,}"
@@ -475,8 +475,8 @@ export default function KlantenPage() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">Adres</label>
                           <input
                             type="text"
-                            value={formData.address}
-                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            value={formData.adres}
+                            onChange={(e) => setFormData({ ...formData, adres: e.target.value })}
                             className="w-full p-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                           />
                         </div>
@@ -484,8 +484,8 @@ export default function KlantenPage() {
                           <label className="block text-sm font-medium text-gray-300 mb-2">BTW-nummer</label>
                           <input
                             type="text"
-                            value={formData.vatNumber}
-                            onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
+                            value={formData.btw_nummer}
+                            onChange={(e) => setFormData({ ...formData, btw_nummer: e.target.value })}
                             className="w-full p-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                           />
                         </div>
@@ -495,7 +495,7 @@ export default function KlantenPage() {
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
                           onClick={() => handleUpdateClient(client.id)}
-                          disabled={!formData.name || !formData.phone}
+                          disabled={!formData.bedrijfsnaam || !formData.telefoon}
                         >
                           <Save className="h-4 w-4 mr-2" />
                           Opslaan

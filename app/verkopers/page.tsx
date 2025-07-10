@@ -17,7 +17,7 @@ export default function VerkopersPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
+    naam: "",
     email: "",
     is_admin: false,
     regio_id: "",
@@ -89,7 +89,7 @@ export default function VerkopersPage() {
       console.log("Adding seller with data:", formData)
       
       // Validate required fields
-      if (!formData.name || !formData.email || !formData.regio_id) {
+      if (!formData.naam || !formData.email || !formData.regio_id) {
         toast({
           title: "Fout",
           description: "Naam, e-mail en regio zijn verplicht",
@@ -111,7 +111,7 @@ export default function VerkopersPage() {
       const { data, error } = await supabase
         .from("verkopers")
         .insert([{
-          naam: formData.name,
+          naam: formData.naam,
           email: formData.email,
           is_admin: formData.is_admin,
           regio_id: formData.regio_id,
@@ -129,7 +129,7 @@ export default function VerkopersPage() {
       }
 
       console.log("Seller added successfully:", data)
-      setFormData({ name: "", email: "", is_admin: false, regio_id: "" })
+      setFormData({ naam: "", email: "", is_admin: false, regio_id: "" })
       setShowAddForm(false)
       
       // Refresh the sellers list
@@ -139,8 +139,8 @@ export default function VerkopersPage() {
         await logEvent({
           type: "agent_add",
           status: "success",
-          message: `Verkoper toegevoegd: ${formData.name}`,
-          data: { verkoper_id: data[0].id, naam: formData.name, regio_id: formData.regio_id, email: formData.email },
+          message: `Verkoper toegevoegd: ${formData.naam}`,
+          data: { verkoper_id: data[0].id, naam: formData.naam, regio_id: formData.regio_id, email: formData.email },
         })
       }
     } catch (error) {
@@ -153,15 +153,15 @@ export default function VerkopersPage() {
       await logEvent({
         type: "agent_add",
         status: "error",
-        message: `Fout bij toevoegen verkoper: ${formData.name}`,
-        data: { naam: formData.name, regio_id: formData.regio_id, error },
+        message: `Fout bij toevoegen verkoper: ${formData.naam}`,
+        data: { naam: formData.naam, regio_id: formData.regio_id, error },
       })
     }
   }
 
   const handleUpdateSeller = async (id: string) => {
     try {
-      if (!formData.name || !formData.email || !formData.regio_id) {
+      if (!formData.naam || !formData.email || !formData.regio_id) {
         toast({
           title: "Fout",
           description: "Naam, e-mail en regio zijn verplicht",
@@ -183,7 +183,7 @@ export default function VerkopersPage() {
       const { error } = await supabase
         .from("verkopers")
         .update({
-          naam: formData.name,
+          naam: formData.naam,
           email: formData.email,
           is_admin: formData.is_admin,
           regio_id: formData.regio_id,
@@ -201,15 +201,15 @@ export default function VerkopersPage() {
       }
 
       setEditingId(null)
-      setFormData({ name: "", email: "", is_admin: false, regio_id: "" })
+      setFormData({ naam: "", email: "", is_admin: false, regio_id: "" })
       await fetchSellers()
 
       if (!error) {
         await logEvent({
           type: "agent_edit",
           status: "success",
-          message: `Verkoper gewijzigd: ${formData.name}`,
-          data: { verkoper_id: id, naam: formData.name, regio_id: formData.regio_id, email: formData.email },
+          message: `Verkoper gewijzigd: ${formData.naam}`,
+          data: { verkoper_id: id, naam: formData.naam, regio_id: formData.regio_id, email: formData.email },
         })
       }
     } catch (error) {
@@ -222,8 +222,8 @@ export default function VerkopersPage() {
       await logEvent({
         type: "agent_edit",
         status: "error",
-        message: `Fout bij wijzigen verkoper: ${formData.name}`,
-        data: { verkoper_id: id, naam: formData.name, regio_id: formData.regio_id, error },
+        message: `Fout bij wijzigen verkoper: ${formData.naam}`,
+        data: { verkoper_id: id, naam: formData.naam, regio_id: formData.regio_id, error },
       })
     }
   }
@@ -276,7 +276,7 @@ export default function VerkopersPage() {
   const startEdit = (seller: any) => {
     setEditingId(seller.id)
     setFormData({
-      name: seller.naam,
+      naam: seller.naam,
       email: seller.email,
       is_admin: seller.is_admin,
       regio_id: seller.regio_id,
@@ -285,7 +285,7 @@ export default function VerkopersPage() {
 
   const cancelEdit = () => {
     setEditingId(null)
-    setFormData({ name: "", email: "", is_admin: false, regio_id: "" })
+    setFormData({ naam: "", email: "", is_admin: false, regio_id: "" })
   }
 
   return (
@@ -316,8 +316,8 @@ export default function VerkopersPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Naam *</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.naam}
+                  onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Volledige naam"
                   required
@@ -365,7 +365,7 @@ export default function VerkopersPage() {
                 <Button 
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleAddSeller}
-                  disabled={!formData.name || !formData.email || !formData.regio_id}
+                  disabled={!formData.naam || !formData.email || !formData.regio_id}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Toevoegen
@@ -434,8 +434,8 @@ export default function VerkopersPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Naam *</label>
                       <input
                         type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={formData.naam}
+                        onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                         required
                       />
@@ -482,7 +482,7 @@ export default function VerkopersPage() {
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
                         onClick={() => handleUpdateSeller(seller.id)}
-                        disabled={!formData.name || !formData.email || !formData.regio_id}
+                        disabled={!formData.naam || !formData.email || !formData.regio_id}
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Opslaan

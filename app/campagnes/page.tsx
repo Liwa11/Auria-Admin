@@ -15,9 +15,9 @@ export default function CampagnesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
-    startDate: "",
-    endDate: "",
+    naam: "",
+    startdatum: "",
+    einddatum: "",
   })
 
   const { toast } = useToast()
@@ -54,7 +54,7 @@ export default function CampagnesPage() {
     try {
       console.log("Adding campaign with data:", formData)
       
-      if (!formData.name) {
+      if (!formData.naam) {
         toast({ title: "Fout", description: "Campagne naam is verplicht", variant: "destructive" })
         return
       }
@@ -62,9 +62,9 @@ export default function CampagnesPage() {
       const { data, error } = await supabase
         .from("campagnes")
         .insert([{
-          naam: formData.name,
-          startdatum: formData.startDate || null,
-          einddatum: formData.endDate || null,
+          naam: formData.naam,
+          startdatum: formData.startdatum || null,
+          einddatum: formData.einddatum || null,
         }])
         .select()
 
@@ -74,7 +74,7 @@ export default function CampagnesPage() {
       }
 
       console.log("Campaign added successfully:", data)
-      setFormData({ name: "", startDate: "", endDate: "" })
+      setFormData({ naam: "", startdatum: "", einddatum: "" })
       setShowAddForm(false)
       
       await fetchCampaigns()
@@ -82,8 +82,8 @@ export default function CampagnesPage() {
         await logEvent({
           type: "campaign_add",
           status: "success",
-          message: `Nieuwe campagne toegevoegd: ${formData.name}`,
-          data: { campagne_id: data[0].id, naam: formData.name, startdatum: formData.startDate, einddatum: formData.endDate },
+          message: `Nieuwe campagne toegevoegd: ${formData.naam}`,
+          data: { campagne_id: data[0].id, naam: formData.naam, startdatum: formData.startdatum, einddatum: formData.einddatum },
         })
       }
     } catch (error) {
@@ -92,8 +92,8 @@ export default function CampagnesPage() {
       await logEvent({
         type: "campaign_add",
         status: "error",
-        message: `Fout bij toevoegen campagne: ${formData.name}`,
-        data: { naam: formData.name, error },
+        message: `Fout bij toevoegen campagne: ${formData.naam}`,
+        data: { naam: formData.naam, error },
       })
     }
   }
@@ -103,22 +103,22 @@ export default function CampagnesPage() {
       const { error } = await supabase
         .from("campagnes")
         .update({
-          naam: formData.name,
-          startdatum: formData.startDate || null,
-          einddatum: formData.endDate || null,
+          naam: formData.naam,
+          startdatum: formData.startdatum || null,
+          einddatum: formData.einddatum || null,
         })
         .eq("id", id)
 
       if (error) throw error
 
       setEditingId(null)
-      setFormData({ name: "", startDate: "", endDate: "" })
+      setFormData({ naam: "", startdatum: "", einddatum: "" })
       if (!error) {
         await logEvent({
           type: "campaign_edit",
           status: "success",
-          message: `Campagne gewijzigd: ${formData.name}`,
-          data: { campagne_id: id, naam: formData.name, startdatum: formData.startDate, einddatum: formData.endDate },
+          message: `Campagne gewijzigd: ${formData.naam}`,
+          data: { campagne_id: id, naam: formData.naam, startdatum: formData.startdatum, einddatum: formData.einddatum },
         })
       }
     } catch (error) {
@@ -126,8 +126,8 @@ export default function CampagnesPage() {
       await logEvent({
         type: "campaign_edit",
         status: "error",
-        message: `Fout bij wijzigen campagne: ${formData.name}`,
-        data: { campagne_id: id, naam: formData.name, error },
+        message: `Fout bij wijzigen campagne: ${formData.naam}`,
+        data: { campagne_id: id, naam: formData.naam, error },
       })
     }
   }
@@ -164,15 +164,15 @@ export default function CampagnesPage() {
   const startEdit = (campaign: any) => {
     setEditingId(campaign.id)
     setFormData({
-      name: campaign.naam,
-      startDate: campaign.startdatum || "",
-      endDate: campaign.einddatum || "",
+      naam: campaign.naam,
+      startdatum: campaign.startdatum || "",
+      einddatum: campaign.einddatum || "",
     })
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setFormData({ name: "", startDate: "", endDate: "" })
+    setFormData({ naam: "", startdatum: "", einddatum: "" })
   }
 
   const getCampaignStatus = (campaign: any) => {
@@ -227,8 +227,8 @@ export default function CampagnesPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Naam</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.naam}
+                  onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Campagne naam"
                   required
@@ -239,8 +239,8 @@ export default function CampagnesPage() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Startdatum (optioneel)</label>
                   <input
                     type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    value={formData.startdatum}
+                    onChange={(e) => setFormData({ ...formData, startdatum: e.target.value })}
                     className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -248,8 +248,8 @@ export default function CampagnesPage() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Einddatum (optioneel)</label>
                   <input
                     type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    value={formData.einddatum}
+                    onChange={(e) => setFormData({ ...formData, einddatum: e.target.value })}
                     className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -258,7 +258,7 @@ export default function CampagnesPage() {
                 <Button 
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleAddCampaign}
-                  disabled={!formData.name}
+                  disabled={!formData.naam}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Toevoegen
@@ -320,8 +320,8 @@ export default function CampagnesPage() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">Naam</label>
                       <input
                         type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={formData.naam}
+                        onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                         required
                       />
@@ -331,8 +331,8 @@ export default function CampagnesPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Startdatum</label>
                         <input
                           type="date"
-                          value={formData.startDate}
-                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          value={formData.startdatum}
+                          onChange={(e) => setFormData({ ...formData, startdatum: e.target.value })}
                           className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                       </div>
@@ -340,8 +340,8 @@ export default function CampagnesPage() {
                         <label className="block text-sm font-medium text-gray-300 mb-2">Einddatum</label>
                         <input
                           type="date"
-                          value={formData.endDate}
-                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          value={formData.einddatum}
+                          onChange={(e) => setFormData({ ...formData, einddatum: e.target.value })}
                           className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                       </div>
@@ -351,7 +351,7 @@ export default function CampagnesPage() {
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
                         onClick={() => handleUpdateCampaign(campaign.id)}
-                        disabled={!formData.name}
+                        disabled={!formData.naam}
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Opslaan
