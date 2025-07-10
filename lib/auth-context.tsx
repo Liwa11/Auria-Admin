@@ -147,9 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(adminUser)
-      // Na succesvolle login en laden van adminUser, push naar dashboard
+      // Na succesvolle login en laden van adminUser, replace naar dashboard zodat de app volledig opnieuw laadt
       if (adminUser && data.user) {
-        router.push("/dashboard")
+        setTimeout(() => {
+          router.replace("/dashboard")
+        }, 100) // kleine delay om context update te garanderen
       }
       return { success: true }
     } catch (error: any) {
