@@ -110,12 +110,15 @@ export default function VerkopersPage() {
 
       const { data, error } = await supabase
         .from("verkopers")
-        .insert([{
-          naam: formData.naam,
-          email: formData.email,
-          is_admin: formData.is_admin,
-          regio_id: formData.regio_id,
-        }])
+        .insert([
+          {
+            naam: formData.naam,
+            email: formData.email,
+            is_admin: formData.is_admin ?? false,
+            regio_id: formData.regio_id || null,
+            aangemaakt_op: new Date().toISOString(),
+          },
+        ])
         .select() // Supabase kolomnaam gefixt
 
       if (error) {
@@ -188,7 +191,7 @@ export default function VerkopersPage() {
           is_admin: formData.is_admin,
           regio_id: formData.regio_id,
         })
-        .eq("id", id) // Supabase kolomnaam gefixt
+        .eq("id", formData.id)
 
       if (error) {
         console.error("Supabase error:", error)

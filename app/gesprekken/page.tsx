@@ -59,8 +59,16 @@ export default function GesprekkenPage() {
     try {
       const { error } = await supabase
         .from("gesprekken")
-        .update({ datum: formData.date, tijdslot: formData.time, opmerkingen: formData.notes, resultaatcode: formData.status }) // Supabase kolomnaam gefixt
-        .eq("id", id) // Supabase kolomnaam gefixt
+        .update({
+          datum: formData.datum,
+          tijdslot: formData.tijdslot,
+          opmerkingen: formData.opmerkingen,
+          klant_id: formData.klant_id,
+          verkoper_id: formData.verkoper_id,
+          campagne_id: formData.campagne_id,
+          regio_id: formData.regio_id,
+        })
+        .eq("id", formData.id)
       if (!error) {
         await logEvent({
           type: "call_ended",

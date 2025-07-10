@@ -26,60 +26,78 @@ export const handleSupabaseError = (error: any) => {
   return error?.message || "Er is een fout opgetreden"
 }
 
-// Database types - Updated to match actual schema
+// Database types - Supabase schema als enige waarheid
 export interface AdminUser {
-  id: string
-  name: string
-  email: string
-  avatar_url?: string
-  last_login?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  email: string;
+  rol?: string; // default 'agent'
+  actief?: boolean; // default true
+  aangemaakt_op?: string; // default now()
 }
 
-export interface Campaign {
-  id: string
-  naam: string
-  startdatum?: string
-  einddatum?: string
-  regio_id?: string
+export interface CallScript {
+  id: string;
+  script?: string;
+  ai_prompt?: string;
+  updated_at?: string;
 }
 
-export interface Seller {
-  id: string
-  naam: string
-  email: string
-  is_admin: boolean
-  regio_id: string
-  aangemaakt_op: string
+export interface Campagne {
+  id: string;
+  naam: string;
+  startdatum?: string;
+  einddatum?: string;
 }
 
-export interface Client {
-  id: string
-  bedrijfsnaam: string
-  email: string
-  telefoon: string
-  adres: string
-  btw_nummer?: string
-  aangemaakt_op: string
+export interface Gesprek {
+  id: string;
+  datum: string;
+  tijdslot: string;
+  opmerkingen?: string;
+  klant_id?: string;
+  verkoper_id?: string;
+  campagne_id?: string;
+  regio_id?: string;
+  aangemaakt_op?: string;
 }
 
-export interface CallLog {
-  id: string
-  datum: string
-  tijdslot: string
-  opmerkingen?: string
-  klant_id: string
-  verkoper_id: string
-  campagne_id: string
-  regio_id?: string
-  resultaatcode: string
-  aangemaakt_op: string
+export interface Klant {
+  id: string;
+  bedrijfsnaam: string;
+  email?: string;
+  telefoon?: string;
+  adres?: string;
+  aangemaakt_op?: string;
+  btw_nummer?: string;
 }
 
-export interface Region {
-  id: string
-  naam: string
+export interface Log {
+  id: string;
+  type: string;
+  status: string;
+  message: string;
+  data?: any;
+  created_at: string;
+  user_id?: string;
+  ip?: string;
+  device?: string;
+  region?: string;
+  twilio_sid?: string;
+}
+
+export interface Regio {
+  id: string;
+  naam: string;
+  Beschrijving?: string;
+}
+
+export interface Verkoper {
+  id: string;
+  naam: string;
+  email: string;
+  is_admin?: boolean;
+  aangemaakt_op?: string;
+  regio_id?: string;
 }
 
 export interface ExternalApi {

@@ -38,28 +38,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Supabase user.id (checkAuth):", authUser.id)
 
       // Check if user exists in admin_users table (op id)
-      const { data: adminUser, error: adminError, status } = await supabase
+      let { data: adminUser, error: adminError } = await supabase
         .from("admin_users")
         .select("*")
         .eq("id", authUser.id)
         .single()
 
+      // Automatische synchronisatie: als user niet bestaat, voeg toe
       if (adminError || !adminUser) {
-        console.error("Gebruiker niet gevonden in admin_users voor id:", authUser.id, adminError)
-        setError(`Geen toegang: jouw account (${authUser.id}) bestaat niet in admin_users. Neem contact op met de beheerder.`)
-        await supabase.auth.signOut()
-        setUser(null)
-        return
+        console.warn("admin_users entry niet gevonden, probeer aan te maken:", authUser.id)
+        const { data: inserted, error: insertError } = await supabase
+          .from("admin_users")
+          .insert([
+            {
+              id: authUser.id,
+              email: authUser.email,
+              rol: 'agent',
+              actief: true,
+              aangemaakt_op: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single()
+        if (insertError || !inserted) {
+          setError(`Kan admin_users entry niet aanmaken voor id ${authUser.id}: ${insertError?.message}`)
+          await supabase.auth.signOut()
+          setUser(null)
+          return
+        }
+        adminUser = inserted
       }
-
-      // Update last login
-      await supabase
-        .from("admin_users")
-        .update({ 
-          last_login: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", adminUser.id)
 
       setUser(adminUser)
     } catch (error: any) {
@@ -96,28 +104,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Supabase user.id (login):", data.user.id)
 
       // Check of user bestaat in admin_users (op id)
-      const { data: adminUser, error: adminError, status } = await supabase
+      let { data: adminUser, error: adminError } = await supabase
         .from("admin_users")
         .select("*")
         .eq("id", data.user.id)
         .single()
 
+      // Automatische synchronisatie: als user niet bestaat, voeg toe
       if (adminError || !adminUser) {
-        setError(`Geen toegang: jouw account (${data.user.id}) bestaat niet in admin_users. Neem contact op met de beheerder.`)
-        if (process.env.NODE_ENV === "development") {
-          console.error("[DEV] admin_users fetch error:", adminError)
+        console.warn("admin_users entry niet gevonden, probeer aan te maken:", data.user.id)
+        const { data: inserted, error: insertError } = await supabase
+          .from("admin_users")
+          .insert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+              rol: 'agent',
+              actief: true,
+              aangemaakt_op: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single()
+        if (insertError || !inserted) {
+          setError(`Kan admin_users entry niet aanmaken voor id ${data.user.id}: ${insertError?.message}`)
+          return { success: false, error: "Geen toegang. Je account is niet geautoriseerd als admin gebruiker. Neem contact op met de beheerder." }
         }
-        return { success: false, error: "Geen toegang. Je account is niet geautoriseerd als admin gebruiker. Neem contact op met de beheerder." }
+        adminUser = inserted
       }
-
-      // Update last login
-      await supabase
-        .from("admin_users")
-        .update({ 
-          last_login: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", adminUser.id)
 
       setUser(adminUser)
       return { success: true }

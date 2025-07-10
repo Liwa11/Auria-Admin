@@ -103,6 +103,7 @@ export default function KlantenPage() {
           telefoon: formData.telefoon,
           adres: formData.adres,
           btw_nummer: formData.btw_nummer || null,
+          aangemaakt_op: new Date().toISOString(),
         }])
         .select() // Supabase kolomnaam gefixt
 
@@ -180,9 +181,9 @@ export default function KlantenPage() {
           email: formData.email,
           telefoon: formData.telefoon,
           adres: formData.adres,
-          btw_nummer: formData.btw_nummer || null,
+          btw_nummer: formData.btw_nummer,
         })
-        .eq("id", id) // Supabase kolomnaam gefixt
+        .eq("id", id)
 
       if (error) {
         console.error("Supabase error:", error)

@@ -104,10 +104,10 @@ export default function CampagnesPage() {
         .from("campagnes")
         .update({
           naam: formData.naam,
-          startdatum: formData.startdatum || null,
-          einddatum: formData.einddatum || null,
+          startdatum: formData.startdatum,
+          einddatum: formData.einddatum,
         })
-        .eq("id", id) // Supabase kolomnaam gefixt
+        .eq("id", formData.id)
 
       if (error) throw error
 

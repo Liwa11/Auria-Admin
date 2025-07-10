@@ -60,7 +60,7 @@ export default function RegiosPage() {
       const { data, error } = await supabase
         .from("regio")
         .select("*")
-        .order("naam")
+        .order("naam", { ascending: true })
 
       if (error) throw error
       
@@ -116,8 +116,8 @@ export default function RegiosPage() {
         .from("regio")
         .insert([
           {
-            naam: formData.naam.trim(),
-            beschrijving: formData.beschrijving.trim() || null,
+            naam: formData.naam,
+            Beschrijving: formData.beschrijving || null,
           },
         ])
         .select()
@@ -168,15 +168,13 @@ export default function RegiosPage() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("regio")
         .update({
-          naam: formData.naam.trim(),
-          beschrijving: formData.beschrijving.trim() || null,
-          updated_at: new Date().toISOString(),
+          naam: formData.naam,
+          Beschrijving: formData.beschrijving || null,
         })
         .eq("id", editingRegion.id)
-        .select()
 
       if (error) {
         console.error("Supabase update error:", error)

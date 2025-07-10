@@ -42,7 +42,7 @@ export default function GebruikersbeheerPage() {
       const { data, error } = await supabase
         .from("admin_users")
         .select("*")
-        .order("aangemaakt_op", { ascending: false })
+        .order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
 
       if (error) throw error
       setAdmins(data || [])
@@ -55,9 +55,18 @@ export default function GebruikersbeheerPage() {
 
   const handleAddAdmin = async () => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("admin_users")
-        .insert([{ name: formData.name, email: formData.email, avatar_url: formData.avatar_url || null }])
+        .insert([
+          {
+            id: formData.id,
+            email: formData.email,
+            rol: formData.rol || 'agent',
+            actief: formData.actief ?? true,
+            aangemaakt_op: new Date().toISOString(),
+          },
+        ])
+        .select()
       if (!error) {
         await logEvent({
           type: "user_add",
@@ -80,8 +89,12 @@ export default function GebruikersbeheerPage() {
     try {
       const { error } = await supabase
         .from("admin_users")
-        .update({ name: formData.name, email: formData.email, avatar_url: formData.avatar_url || null })
-        .eq("id", id)
+        .update({
+          email: formData.email,
+          rol: formData.rol,
+          actief: formData.actief,
+        })
+        .eq("id", formData.id)
       if (!error) {
         await logEvent({
           type: "user_edit",

@@ -30,7 +30,7 @@ export default function GebruikersPage() {
     const { data, error } = await supabase
       .from("admin_users")
       .select("*")
-      .order("aangemaakt_op", { ascending: false })
+      .order("aangemaakt_op", { ascending: false }) // Supabase kolomnaam gefixt
     if (!error) setAdmins(data || [])
     setLoading(false)
   }
