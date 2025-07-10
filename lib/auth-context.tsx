@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       })
 
+      // Debug: toon session.user
+      console.log("[LOGIN] session.user:", data?.user)
+
       if (error || !data.user) {
         setError("Ongeldige inloggegevens")
         if (process.env.NODE_ENV === "development") {
@@ -100,9 +103,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: "Ongeldige inloggegevens" }
       }
 
-      // Log user.id voor debug
-      console.log("Supabase user.id (login):", data.user.id)
-
       // Check of user bestaat in admin_users (op id)
       let { data: adminUser, error: adminError } = await supabase
         .from("admin_users")
@@ -110,27 +110,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", data.user.id)
         .single()
 
-      // Automatische synchronisatie: als user niet bestaat, voeg toe
+      // Debug: toon resultaat van admin_users query
+      console.log("[LOGIN] admin_users query result:", adminUser)
+      if (adminError) {
+        console.error("[LOGIN] admin_users fetch error:", adminError)
+      }
+
+      // Automatische insert als user niet bestaat
       if (adminError || !adminUser) {
-        console.warn("admin_users entry niet gevonden, probeer aan te maken:", data.user.id)
+        console.warn("[LOGIN] admin_users entry niet gevonden, probeer aan te maken:", data.user.id)
         const { data: inserted, error: insertError } = await supabase
           .from("admin_users")
           .insert([
             {
               id: data.user.id,
               email: data.user.email,
-              rol: 'agent',
+              rol: 'admin',
               actief: true,
               aangemaakt_op: new Date().toISOString(),
             },
           ])
           .select()
           .single()
+        // Debug: toon resultaat van insert
+        console.log("[LOGIN] admin_users insert result:", inserted)
         if (insertError || !inserted) {
           setError(`Kan admin_users entry niet aanmaken voor id ${data.user.id}: ${insertError?.message}`)
           return { success: false, error: "Geen toegang. Je account is niet geautoriseerd als admin gebruiker. Neem contact op met de beheerder." }
         }
-        adminUser = inserted
+        // Herlaad de pagina zodat dashboard opnieuw laadt met correcte data
+        window.location.reload()
+        return { success: true }
       }
 
       setUser(adminUser)
