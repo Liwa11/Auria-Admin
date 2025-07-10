@@ -25,7 +25,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2, Search, MapPin, RefreshCw } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
+import { logEvent } from "@/lib/logEvent"
 
 interface Region {
   id: number
@@ -47,6 +48,8 @@ export default function RegiosPage() {
     beschrijving: "",
   })
 
+  const { toast } = useToast()
+
   useEffect(() => {
     fetchRegions()
     subscribeToChanges()
@@ -61,7 +64,6 @@ export default function RegiosPage() {
 
       if (error) throw error
       
-      console.log("Fetched regions:", data)
       setRegions(data || [])
     } catch (error) {
       console.error("Error fetching regions:", error)
@@ -86,19 +88,15 @@ export default function RegiosPage() {
           table: "regio",
         },
         (payload) => {
-          console.log("Real-time change detected:", payload)
           fetchRegions()
         }
       )
       .subscribe((status) => {
-        console.log("Subscription status:", status)
         if (status === 'SUBSCRIBED') {
-          console.log("Successfully subscribed to regio changes")
         }
       })
 
     return () => {
-      console.log("Unsubscribing from regio changes")
       subscription.unsubscribe()
     }
   }
@@ -114,11 +112,6 @@ export default function RegiosPage() {
     }
 
     try {
-      console.log("Adding region with data:", {
-        naam: formData.naam.trim(),
-        beschrijving: formData.beschrijving.trim() || null,
-      })
-
       const { data, error } = await supabase
         .from("regio")
         .insert([
@@ -134,20 +127,32 @@ export default function RegiosPage() {
         throw error
       }
 
-      console.log("Add successful:", data)
-
       toast({
         title: "Succes",
         description: "Regio succesvol toegevoegd",
       })
       setIsAddDialogOpen(false)
       resetForm()
+      if (!error && data && data[0]) {
+        await logEvent({
+          type: "region_add",
+          status: "success",
+          message: `Regio toegevoegd: ${formData.naam.trim()}`,
+          data: { regio_id: data[0].id, naam: formData.naam.trim(), beschrijving: formData.beschrijving.trim() },
+        })
+      }
     } catch (error) {
       console.error("Error adding region:", error)
       toast({
         title: "Fout",
         description: "Kon regio niet toevoegen",
         variant: "destructive",
+      })
+      await logEvent({
+        type: "region_add",
+        status: "error",
+        message: `Fout bij toevoegen regio: ${formData.naam.trim()}`,
+        data: { naam: formData.naam.trim(), error },
       })
     }
   }
@@ -163,12 +168,6 @@ export default function RegiosPage() {
     }
 
     try {
-      console.log("Updating region with data:", {
-        id: editingRegion.id,
-        naam: formData.naam.trim(),
-        beschrijving: formData.beschrijving.trim() || null,
-      })
-
       const { data, error } = await supabase
         .from("regio")
         .update({
@@ -184,8 +183,6 @@ export default function RegiosPage() {
         throw error
       }
 
-      console.log("Update successful:", data)
-
       toast({
         title: "Succes",
         description: "Regio succesvol bijgewerkt",
@@ -193,12 +190,26 @@ export default function RegiosPage() {
       setIsEditDialogOpen(false)
       setEditingRegion(null)
       resetForm()
+      if (!error && data && data[0]) {
+        await logEvent({
+          type: "region_edit",
+          status: "success",
+          message: `Regio gewijzigd: ${formData.naam.trim()}`,
+          data: { regio_id: editingRegion.id, naam: formData.naam.trim(), beschrijving: formData.beschrijving.trim() },
+        })
+      }
     } catch (error) {
       console.error("Error updating region:", error)
       toast({
         title: "Fout",
         description: "Kon regio niet bijwerken",
         variant: "destructive",
+      })
+      await logEvent({
+        type: "region_edit",
+        status: "error",
+        message: `Fout bij wijzigen regio: ${formData.naam.trim()}`,
+        data: { regio_id: editingRegion?.id, naam: formData.naam.trim(), error },
       })
     }
   }
@@ -218,12 +229,26 @@ export default function RegiosPage() {
         title: "Succes",
         description: "Regio succesvol verwijderd",
       })
+      if (!error) {
+        await logEvent({
+          type: "region_delete",
+          status: "success",
+          message: `Regio verwijderd: ${id}`,
+          data: { regio_id: id },
+        })
+      }
     } catch (error) {
       console.error("Error deleting region:", error)
       toast({
         title: "Fout",
         description: "Kon regio niet verwijderen",
         variant: "destructive",
+      })
+      await logEvent({
+        type: "region_delete",
+        status: "error",
+        message: `Fout bij verwijderen regio: ${id}`,
+        data: { regio_id: id, error },
       })
     }
   }
@@ -409,6 +434,8 @@ export default function RegiosPage() {
                 onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
                 placeholder="Bijv. Noord-Holland"
                 className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                required
+                type="text"
               />
             </div>
             <div className="grid gap-2">

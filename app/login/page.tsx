@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Brain, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
+import { logEvent } from "@/lib/logEvent"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -38,13 +39,37 @@ export default function LoginPage() {
     }
 
     const result = await login(email, password)
-    
+    const device = typeof window !== "undefined" ? window.navigator.userAgent : undefined
+    // IP ophalen via externe service (optioneel, best effort)
+    let ip
+    try {
+      const res = await fetch("https://api.ipify.org?format=json")
+      const json = await res.json()
+      ip = json.ip
+    } catch {}
+
     if (result.success) {
+      await logEvent({
+        type: "login",
+        status: "success",
+        message: `Admin ingelogd: ${email}`,
+        user_id: result.user?.id,
+        data: { email },
+        ip,
+        device,
+      })
       router.push("/")
     } else {
+      await logEvent({
+        type: "login",
+        status: "error",
+        message: `Foute loginpoging: ${email}`,
+        data: { email, error: result.error },
+        ip,
+        device,
+      })
       setError(result.error || "Inloggen mislukt")
     }
-    
     setIsLoading(false)
   }
 

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { supabase, type ExternalApi } from "@/lib/supabase"
 import { Save, Database, Phone, Volume2, Network, Plus, Edit, Trash2, X, Key } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
+import { logEvent } from "@/lib/logEvent"
 
 interface Settings {
   twilio_sid: string
@@ -112,6 +113,12 @@ export default function InstellingenPage() {
           },
           { onConflict: "key" },
         )
+        await logEvent({
+          type: "config_update",
+          status: "success",
+          message: `Instelling gewijzigd: ${setting.key}`,
+          data: { key: setting.key, value: setting.value },
+        })
       }
 
       toast({
@@ -124,6 +131,12 @@ export default function InstellingenPage() {
         title: "Fout",
         description: "Kon instellingen niet opslaan",
         variant: "destructive",
+      })
+      await logEvent({
+        type: "config_update",
+        status: "error",
+        message: `Fout bij opslaan instellingen` ,
+        data: { error },
       })
     } finally {
       setSaving(false)
@@ -141,7 +154,14 @@ export default function InstellingenPage() {
           is_active: true,
         }])
 
-      if (error) throw error
+      if (!error) {
+        await logEvent({
+          type: "config_update",
+          status: "success",
+          message: `API key toegevoegd: ${apiForm.name}`,
+          data: { name: apiForm.name, provider: apiForm.provider },
+        })
+      }
 
       setApiForm({ name: "", api_key: "", provider: "other" })
       setShowAddApi(false)
@@ -158,6 +178,12 @@ export default function InstellingenPage() {
         description: "Kon API sleutel niet toevoegen",
         variant: "destructive",
       })
+      await logEvent({
+        type: "config_update",
+        status: "error",
+        message: `Fout bij toevoegen API key: ${apiForm.name}`,
+        data: { name: apiForm.name, error },
+      })
     }
   }
 
@@ -172,7 +198,14 @@ export default function InstellingenPage() {
         })
         .eq("id", id)
 
-      if (error) throw error
+      if (!error) {
+        await logEvent({
+          type: "config_update",
+          status: "success",
+          message: `API key gewijzigd: ${apiForm.name}`,
+          data: { name: apiForm.name, provider: apiForm.provider },
+        })
+      }
 
       setEditingApi(null)
       setApiForm({ name: "", api_key: "", provider: "other" })
@@ -188,6 +221,12 @@ export default function InstellingenPage() {
         title: "Fout",
         description: "Kon API sleutel niet bijwerken",
         variant: "destructive",
+      })
+      await logEvent({
+        type: "config_update",
+        status: "error",
+        message: `Fout bij wijzigen API key: ${apiForm.name}`,
+        data: { name: apiForm.name, error },
       })
     }
   }

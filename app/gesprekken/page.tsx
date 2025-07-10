@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 import { Phone, User, Building2, Edit, Trash2, X, Save } from "lucide-react"
+import { logEvent } from "@/lib/logEvent"
 
 export default function GesprekkenPage() {
   const [calls, setCalls] = useState<any[]>([])
@@ -58,35 +59,48 @@ export default function GesprekkenPage() {
     try {
       const { error } = await supabase
         .from("gesprekken")
-        .update({
-          datum: formData.date,
-          tijdslot: formData.time,
-          opmerkingen: formData.notes,
-          resultaatcode: formData.status,
-        })
+        .update({ datum: formData.date, tijdslot: formData.time, opmerkingen: formData.notes, resultaatcode: formData.status })
         .eq("id", id)
-
-      if (error) throw error
-
-      setEditingId(null)
-      setFormData({ date: "", time: "", notes: "", status: "" })
+      if (!error) {
+        await logEvent({
+          type: "call_ended",
+          status: "success",
+          message: `Gesprek afgerond: ${id}`,
+          data: { gesprek_id: id, datum: formData.date, tijdslot: formData.time, status: formData.status },
+        })
+      }
     } catch (error) {
-      console.error("Error updating call:", error)
+      await logEvent({
+        type: "call_ended",
+        status: "error",
+        message: `Fout bij afronden gesprek: ${id}`,
+        data: { gesprek_id: id, error },
+      })
     }
   }
 
   const handleDeleteCall = async (id: string) => {
     if (!confirm("Weet je zeker dat je dit gesprek wilt verwijderen?")) return
-
     try {
       const { error } = await supabase
         .from("gesprekken")
         .delete()
         .eq("id", id)
-
-      if (error) throw error
+      if (!error) {
+        await logEvent({
+          type: "call_delete",
+          status: "success",
+          message: `Gesprek verwijderd: ${id}`,
+          data: { gesprek_id: id },
+        })
+      }
     } catch (error) {
-      console.error("Error deleting call:", error)
+      await logEvent({
+        type: "call_delete",
+        status: "error",
+        message: `Fout bij verwijderen gesprek: ${id}`,
+        data: { gesprek_id: id, error },
+      })
     }
   }
 

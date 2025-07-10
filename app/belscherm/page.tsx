@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,16 +8,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { FileText, Save, Play, Phone, User, Building2, CheckCircle, XCircle, Clock } from "lucide-react"
 import { supabase, type Client, type Campaign } from "@/lib/supabase"
+import { logEvent } from "@/lib/logEvent"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function BelschermPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [selectedCampaign, setSelectedCampaign] = useState<string>("")
-  const [callScript, setCallScript] = useState("")
+  const [script, setScript] = useState("")
   const [aiPrompt, setAiPrompt] = useState("")
   const [loading, setLoading] = useState(true)
   const [currentCall, setCurrentCall] = useState<any>(null)
+
+  // State voor call script
+  const [scriptId, setScriptId] = useState<string | null>(null)
+  const [loadingScript, setLoadingScript] = useState(true)
+  const [errorScript, setErrorScript] = useState<string | null>(null)
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchClients()
@@ -28,18 +39,14 @@ export default function BelschermPage() {
   const fetchClients = async () => {
     try {
       const { data, error } = await supabase
-        .from("clients")
-        .select(`
-          *,
-          campaigns(name)
-        `)
-        .eq("status", "active")
-        .order("name")
+        .from("klanten")
+        .select("*")
+        .order("bedrijfsnaam")
 
       if (error) throw error
       setClients(data || [])
     } catch (error) {
-      console.error("Error fetching clients:", error)
+      toast({ title: "Fout", description: error.message || String(error), variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -48,22 +55,21 @@ export default function BelschermPage() {
   const fetchCampaigns = async () => {
     try {
       const { data, error } = await supabase
-        .from("campaigns")
-        .select("id, name, description")
-        .eq("status", "active")
-        .order("name")
+        .from("campagnes")
+        .select("*")
+        .order("naam")
 
       if (error) throw error
       setCampaigns((data as any[]) || [])
     } catch (error) {
-      console.error("Error fetching campaigns:", error)
+      toast({ title: "Fout", description: error.message || String(error), variant: "destructive" })
     }
   }
 
   const fetchCallScripts = async () => {
     try {
       // Fetch default scripts from settings or use placeholder
-      setCallScript(`Hallo, dit is [Verkoper Naam] van [Bedrijf]. Ik bel u namens [Campagne Naam].
+      setScript(`Hallo, dit is [Verkoper Naam] van [Bedrijf]. Ik bel u namens [Campagne Naam].
 
 Ik zie dat u geïnteresseerd bent in onze diensten. Kunt u mij vertellen wat uw specifieke behoeften zijn?
 
@@ -82,22 +88,96 @@ Belangrijke richtlijnen:
 
 Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
     } catch (error) {
-      console.error("Error fetching scripts:", error)
+      toast({ title: "Fout", description: error.message || String(error), variant: "destructive" })
     }
+  }
+
+  // Ophalen call script bij laden
+  useEffect(() => {
+    fetchCallScript()
+  }, [])
+
+  async function fetchCallScript() {
+    setLoadingScript(true)
+    setErrorScript(null)
+    try {
+      const { data, error } = await supabase.from("call_scripts").select("*").order("updated_at", { ascending: false }).limit(1)
+      if (error) throw error
+      if (data && data.length > 0) {
+        setScript(data[0].script || "")
+        setAiPrompt(data[0].ai_prompt || "")
+        setScriptId(data[0].id)
+      } else {
+        setScript("")
+        setAiPrompt("")
+        setScriptId(null)
+      }
+    } catch (err: any) {
+      if (err.message?.includes("does not exist")) {
+        setErrorScript("Tabel 'call_scripts' bestaat niet. Voeg deze toe in Supabase:\n\ncreate table public.call_scripts (id uuid primary key default gen_random_uuid(), script text, ai_prompt text, updated_at timestamptz default now());")
+      } else {
+        setErrorScript("Fout bij ophalen verkoopscript: " + err.message)
+      }
+    } finally {
+      setLoadingScript(false)
+    }
+  }
+
+  // Autosave met debounce
+  function handleScriptChange(val: string) {
+    setScript(val)
+    triggerAutosave(val, aiPrompt)
+  }
+  function handleAiPromptChange(val: string) {
+    setAiPrompt(val)
+    triggerAutosave(script, val)
+  }
+  function triggerAutosave(newScript: string, newPrompt: string) {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current)
+    saveTimeout.current = setTimeout(() => {
+      saveScript(newScript, newPrompt)
+    }, 2000)
+  }
+  async function saveScript(newScript: string, newPrompt: string) {
+    if (!scriptId) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from("call_scripts").update({ script: newScript, ai_prompt: newPrompt, updated_at: new Date().toISOString() }).eq("id", scriptId)
+      if (error) throw error
+      await logEvent({
+        type: "call_script_update",
+        status: "success",
+        message: "Verkoopscript of AI-prompt bijgewerkt",
+        data: { script: newScript, ai_prompt: newPrompt },
+      })
+    } catch (err: any) {
+      await logEvent({
+        type: "call_script_update",
+        status: "error",
+        message: "Fout bij bijwerken verkoopscript of AI-prompt",
+        data: { error: err.message },
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+  // Handmatig opslaan
+  async function handleManualSave() {
+    await saveScript(script, aiPrompt)
   }
 
   const startCall = async () => {
     if (!selectedClient || !selectedCampaign) {
-      alert("Selecteer eerst een klant en campagne")
+      toast({ title: "Fout", description: "Selecteer eerst een klant en campagne", variant: "destructive" })
       return
     }
 
     try {
       const { data, error } = await supabase
-        .from("call_logs")
+        .from("gesprekken")
         .insert([{
-          client_id: selectedClient,
-          campaign_id: selectedCampaign,
+          klant_id: selectedClient,
+          campagne_id: selectedCampaign,
           status: "in_progress",
           notes: "Gesprek gestart via belscherm",
         }])
@@ -107,22 +187,31 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
       if (error) throw error
 
       setCurrentCall(data)
-      alert("Gesprek gestart! Gebruik de knoppen hieronder om de status bij te werken.")
+      toast({ title: "Gesprek gestart", description: "Gebruik de knoppen hieronder om de status bij te werken." })
+      await logEvent({
+        type: "call_init",
+        status: "success",
+        message: `Start gesprek: ${clients.find(c => c.id === selectedClient)?.bedrijfsnaam || ''} (${campaigns.find(c => c.id === selectedCampaign)?.naam || ''}) door ${'Verkoper Naam'}`,
+        data: {
+          klant: clients.find(c => c.id === selectedClient),
+          campagne: campaigns.find(c => c.id === selectedCampaign),
+          verkoper: { naam: 'Verkoper Naam' }, // Placeholder for verkoper info
+        },
+      })
     } catch (error) {
-      console.error("Error starting call:", error)
-      alert("Fout bij het starten van het gesprek")
+      toast({ title: "Fout", description: "Fout bij het starten van het gesprek", variant: "destructive" })
     }
   }
 
   const updateCallStatus = async (status: string) => {
     if (!currentCall) {
-      alert("Geen actief gesprek")
+      toast({ title: "Fout", description: "Geen actief gesprek", variant: "destructive" })
       return
     }
 
     try {
       const { error } = await supabase
-        .from("call_logs")
+        .from("gesprekken")
         .update({ 
           status,
           notes: `Status bijgewerkt naar: ${status}`,
@@ -133,10 +222,9 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
 
       setCurrentCall(null)
       setSelectedClient("")
-      alert(`Gesprek ${status === "completed" ? "voltooid" : "beëindigd"}`)
+      toast({ title: `Gesprek ${status === "completed" ? "voltooid" : "beëindigd"}` })
     } catch (error) {
-      console.error("Error updating call status:", error)
-      alert("Fout bij het bijwerken van de gesprekstatus")
+      toast({ title: "Fout", description: "Fout bij het bijwerken van de gesprekstatus", variant: "destructive" })
     }
   }
 
@@ -144,34 +232,12 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
   const selectedCampaignData = campaigns.find(c => c.id === selectedCampaign)
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Belscherm</h1>
-          <p className="text-gray-400">Beheer belscripts en voer gesprekken</p>
-        </div>
-        <Button 
-          className="bg-green-600 hover:bg-green-700"
-          onClick={() => {
-            // Save scripts to settings
-            alert("Scripts opgeslagen!")
-          }}
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Script Opslaan
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Client Selection & Call Control */}
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center text-white">
-              <Phone className="h-5 w-5 mr-2 text-blue-400" />
-              Gesprek Control
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+    <div className="w-full min-h-screen bg-slate-900 p-0">
+      <div className="max-w-[1800px] mx-auto w-full h-full grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+        {/* Gesprek Control links */}
+        <div className="col-span-1 w-full h-full flex flex-col">
+          {/* Gesprek Control Card */}
+          <div className="bg-slate-800 rounded-lg shadow-md p-6 flex-1 flex flex-col overflow-auto min-h-[300px]">
             <div>
               <label className="text-gray-300 text-sm mb-2 block">Selecteer Klant</label>
               <Select value={selectedClient} onValueChange={setSelectedClient}>
@@ -200,7 +266,7 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
                 <SelectContent>
                   {campaigns.map((campaign) => (
                     <SelectItem key={campaign.id} value={campaign.id}>
-                      {campaign.name}
+                      {campaign.naam}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -208,32 +274,28 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
             </div>
 
             {selectedClientData && (
-              <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="p-3 bg-gray-700 rounded-lg mt-4">
                 <h4 className="font-semibold text-white mb-2">Klant Informatie</h4>
                 <div className="text-sm text-gray-300 space-y-1">
-                  <div><strong>Naam:</strong> {selectedClientData.name}</div>
-                  <div><strong>Telefoon:</strong> {selectedClientData.phone}</div>
+                  <div><strong>Bedrijfsnaam:</strong> {selectedClientData.bedrijfsnaam}</div>
+                  <div><strong>Telefoon:</strong> {selectedClientData.telefoon}</div>
                   {selectedClientData.email && (
                     <div><strong>E-mail:</strong> {selectedClientData.email}</div>
                   )}
-                  <div><strong>Campagne:</strong> {selectedClientData.campaign_id}</div>
                 </div>
               </div>
             )}
 
             {selectedCampaignData && (
-              <div className="p-3 bg-gray-700 rounded-lg">
+              <div className="p-3 bg-gray-700 rounded-lg mt-4">
                 <h4 className="font-semibold text-white mb-2">Campagne Informatie</h4>
                 <div className="text-sm text-gray-300">
-                  <div><strong>Naam:</strong> {selectedCampaignData.name}</div>
-                  {selectedCampaignData.description && (
-                    <div><strong>Beschrijving:</strong> {selectedCampaignData.description}</div>
-                  )}
+                  <div><strong>Naam:</strong> {selectedCampaignData.naam}</div>
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-2 mt-4">
               <Button 
                 className="w-full bg-green-600 hover:bg-green-700"
                 onClick={startCall}
@@ -244,7 +306,7 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
               </Button>
 
               {currentCall && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-4">
                   <div className="text-center text-sm text-yellow-400">
                     <Clock className="h-4 w-4 inline mr-1" />
                     Gesprek actief
@@ -286,32 +348,38 @@ Doel: Een afspraak inplannen of relevante informatie verzamelen.`)
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Script Display */}
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center text-white">
-              <FileText className="h-5 w-5 mr-2 text-blue-400" />
-              Belscript
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-gray-700 rounded-lg">
-              <div className="text-sm text-gray-300 whitespace-pre-wrap">
-                {callScript}
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-gray-300 text-sm mb-2 block">AI Prompt</label>
-              <div className="p-3 bg-gray-700 rounded-lg text-sm text-gray-300">
-                {aiPrompt}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        {/* Belscript + AI-prompt rechts */}
+        <div className="col-span-1 lg:col-span-2 w-full h-full flex flex-col gap-6">
+          {/* Belscript Card */}
+          <div className="bg-slate-800 rounded-lg shadow-md p-6 flex-1 flex flex-col overflow-auto min-h-[200px]">
+            <label className="block text-sm font-medium text-gray-300 mb-1">Verkoopscript (Markdown/HTML)</label>
+            <textarea
+              className="w-full min-h-[200px] resize-y bg-gray-900 border border-gray-700 rounded-md text-white p-2 mt-2"
+              value={script}
+              onChange={e => handleScriptChange(e.target.value)}
+              disabled={loadingScript || saving}
+            />
+          </div>
+          {/* AI-prompt Card */}
+          <div className="bg-slate-800 rounded-lg shadow-md p-6 flex-1 flex flex-col overflow-auto min-h-[200px]">
+            <label className="block text-sm font-medium text-gray-300 mb-1">AI-prompt</label>
+            <textarea
+              className="w-full min-h-[200px] resize-y bg-gray-900 border border-gray-700 rounded-md text-white p-2 mt-2"
+              value={aiPrompt}
+              onChange={e => handleAiPromptChange(e.target.value)}
+              disabled={loadingScript || saving}
+            />
+            <button
+              className="mt-4 px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded text-white disabled:opacity-50 self-end"
+              onClick={handleManualSave}
+              disabled={loadingScript || saving}
+            >
+              {saving ? "Opslaan..." : "Opslaan"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

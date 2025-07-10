@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import { Plus, Calendar, Edit, Trash2, X, Save } from "lucide-react"
+import { logEvent } from "@/lib/logEvent"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function CampagnesPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
@@ -17,6 +19,8 @@ export default function CampagnesPage() {
     startDate: "",
     endDate: "",
   })
+
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchCampaigns()
@@ -40,7 +44,7 @@ export default function CampagnesPage() {
       if (error) throw error
       setCampaigns(data || [])
     } catch (error) {
-      console.error("Error fetching campaigns:", error)
+      toast({ title: "Fout", description: error.message || String(error), variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -51,7 +55,7 @@ export default function CampagnesPage() {
       console.log("Adding campaign with data:", formData)
       
       if (!formData.name) {
-        alert("Campagne naam is verplicht")
+        toast({ title: "Fout", description: "Campagne naam is verplicht", variant: "destructive" })
         return
       }
 
@@ -65,8 +69,7 @@ export default function CampagnesPage() {
         .select()
 
       if (error) {
-        console.error("Supabase error:", error)
-        alert(`Fout bij toevoegen: ${error.message}`)
+        toast({ title: "Fout", description: `Fout bij toevoegen: ${error.message}`, variant: "destructive" })
         return
       }
 
@@ -75,9 +78,23 @@ export default function CampagnesPage() {
       setShowAddForm(false)
       
       await fetchCampaigns()
+      if (!error && data && data[0]) {
+        await logEvent({
+          type: "campaign_add",
+          status: "success",
+          message: `Nieuwe campagne toegevoegd: ${formData.name}`,
+          data: { campagne_id: data[0].id, naam: formData.name, startdatum: formData.startDate, einddatum: formData.endDate },
+        })
+      }
     } catch (error) {
       console.error("Error adding campaign:", error)
-      alert(`Fout bij toevoegen: ${error}`)
+      toast({ title: "Fout", description: `Fout bij toevoegen: ${error}`, variant: "destructive" })
+      await logEvent({
+        type: "campaign_add",
+        status: "error",
+        message: `Fout bij toevoegen campagne: ${formData.name}`,
+        data: { naam: formData.name, error },
+      })
     }
   }
 
@@ -96,8 +113,22 @@ export default function CampagnesPage() {
 
       setEditingId(null)
       setFormData({ name: "", startDate: "", endDate: "" })
+      if (!error) {
+        await logEvent({
+          type: "campaign_edit",
+          status: "success",
+          message: `Campagne gewijzigd: ${formData.name}`,
+          data: { campagne_id: id, naam: formData.name, startdatum: formData.startDate, einddatum: formData.endDate },
+        })
+      }
     } catch (error) {
       console.error("Error updating campaign:", error)
+      await logEvent({
+        type: "campaign_edit",
+        status: "error",
+        message: `Fout bij wijzigen campagne: ${formData.name}`,
+        data: { campagne_id: id, naam: formData.name, error },
+      })
     }
   }
 
@@ -111,8 +142,22 @@ export default function CampagnesPage() {
         .eq("id", id)
 
       if (error) throw error
+      if (!error) {
+        await logEvent({
+          type: "campaign_delete",
+          status: "success",
+          message: `Campagne verwijderd: ${id}`,
+          data: { campagne_id: id },
+        })
+      }
     } catch (error) {
       console.error("Error deleting campaign:", error)
+      await logEvent({
+        type: "campaign_delete",
+        status: "error",
+        message: `Fout bij verwijderen campagne: ${id}`,
+        data: { campagne_id: id, error },
+      })
     }
   }
 
@@ -186,6 +231,7 @@ export default function CampagnesPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Campagne naam"
+                  required
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -277,6 +323,7 @@ export default function CampagnesPage() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">

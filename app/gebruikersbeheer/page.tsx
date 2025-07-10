@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Plus, Shield, User, Crown, Edit, Trash2, X, Save } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { AdminUser } from "@/lib/supabase"
+import { logEvent } from "@/lib/logEvent"
 
 export default function GebruikersbeheerPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([])
@@ -56,18 +57,22 @@ export default function GebruikersbeheerPage() {
     try {
       const { error } = await supabase
         .from("admin_users")
-        .insert([{
-          name: formData.name,
-          email: formData.email,
-          avatar_url: formData.avatar_url || null,
-        }])
-
-      if (error) throw error
-
-      setFormData({ name: "", email: "", avatar_url: "" })
-      setShowAddForm(false)
+        .insert([{ name: formData.name, email: formData.email, avatar_url: formData.avatar_url || null }])
+      if (!error) {
+        await logEvent({
+          type: "user_add",
+          status: "success",
+          message: `Admin toegevoegd: ${formData.email}`,
+          data: { email: formData.email, name: formData.name },
+        })
+      }
     } catch (error) {
-      console.error("Error adding admin:", error)
+      await logEvent({
+        type: "user_add",
+        status: "error",
+        message: `Fout bij toevoegen admin: ${formData.email}`,
+        data: { email: formData.email, error },
+      })
     }
   }
 
@@ -75,34 +80,48 @@ export default function GebruikersbeheerPage() {
     try {
       const { error } = await supabase
         .from("admin_users")
-        .update({
-          name: formData.name,
-          email: formData.email,
-          avatar_url: formData.avatar_url || null,
-        })
+        .update({ name: formData.name, email: formData.email, avatar_url: formData.avatar_url || null })
         .eq("id", id)
-
-      if (error) throw error
-
-      setEditingId(null)
-      setFormData({ name: "", email: "", avatar_url: "" })
+      if (!error) {
+        await logEvent({
+          type: "user_edit",
+          status: "success",
+          message: `Admin gewijzigd: ${formData.email}`,
+          data: { admin_id: id, email: formData.email, name: formData.name },
+        })
+      }
     } catch (error) {
-      console.error("Error updating admin:", error)
+      await logEvent({
+        type: "user_edit",
+        status: "error",
+        message: `Fout bij wijzigen admin: ${formData.email}`,
+        data: { admin_id: id, email: formData.email, error },
+      })
     }
   }
 
   const handleDeleteAdmin = async (id: string) => {
     if (!confirm("Weet je zeker dat je deze gebruiker wilt verwijderen?")) return
-
     try {
       const { error } = await supabase
         .from("admin_users")
         .delete()
         .eq("id", id)
-
-      if (error) throw error
+      if (!error) {
+        await logEvent({
+          type: "user_delete",
+          status: "success",
+          message: `Admin verwijderd: ${id}`,
+          data: { admin_id: id },
+        })
+      }
     } catch (error) {
-      console.error("Error deleting admin:", error)
+      await logEvent({
+        type: "user_delete",
+        status: "error",
+        message: `Fout bij verwijderen admin: ${id}`,
+        data: { admin_id: id, error },
+      })
     }
   }
 

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { supabase } from "@/lib/supabase"
 import { Plus, Mail, User, Edit, Trash2, X, Save, Crown, MapPin } from "lucide-react"
+import { logEvent } from "@/lib/logEvent"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function VerkopersPage() {
   const [sellers, setSellers] = useState<any[]>([])
@@ -20,6 +22,8 @@ export default function VerkopersPage() {
     is_admin: false,
     regio_id: "",
   })
+
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchSellers()
@@ -51,6 +55,11 @@ export default function VerkopersPage() {
       setSellers(data || [])
     } catch (error) {
       console.error("Error fetching sellers:", error)
+      toast({
+        title: "Fout",
+        description: error.message || String(error),
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -67,6 +76,11 @@ export default function VerkopersPage() {
       setRegions(data || [])
     } catch (error) {
       console.error("Error fetching regions:", error)
+      toast({
+        title: "Fout",
+        description: error.message || String(error),
+        variant: "destructive",
+      })
     }
   }
 
@@ -76,7 +90,21 @@ export default function VerkopersPage() {
       
       // Validate required fields
       if (!formData.name || !formData.email || !formData.regio_id) {
-        alert("Naam, e-mail en regio zijn verplicht")
+        toast({
+          title: "Fout",
+          description: "Naam, e-mail en regio zijn verplicht",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: "Fout",
+          description: "Ongeldig e-mailadres",
+          variant: "destructive",
+        })
         return
       }
 
@@ -92,7 +120,11 @@ export default function VerkopersPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        alert(`Fout bij toevoegen: ${error.message}`)
+        toast({
+          title: "Fout",
+          description: `Fout bij toevoegen: ${error.message}`,
+          variant: "destructive",
+        })
         return
       }
 
@@ -102,16 +134,49 @@ export default function VerkopersPage() {
       
       // Refresh the sellers list
       await fetchSellers()
+
+      if (!error && data && data[0]) {
+        await logEvent({
+          type: "agent_add",
+          status: "success",
+          message: `Verkoper toegevoegd: ${formData.name}`,
+          data: { verkoper_id: data[0].id, naam: formData.name, regio_id: formData.regio_id, email: formData.email },
+        })
+      }
     } catch (error) {
       console.error("Error adding seller:", error)
-      alert(`Fout bij toevoegen: ${error}`)
+      toast({
+        title: "Fout",
+        description: `Fout bij toevoegen: ${error}`,
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "agent_add",
+        status: "error",
+        message: `Fout bij toevoegen verkoper: ${formData.name}`,
+        data: { naam: formData.name, regio_id: formData.regio_id, error },
+      })
     }
   }
 
   const handleUpdateSeller = async (id: string) => {
     try {
       if (!formData.name || !formData.email || !formData.regio_id) {
-        alert("Naam, e-mail en regio zijn verplicht")
+        toast({
+          title: "Fout",
+          description: "Naam, e-mail en regio zijn verplicht",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: "Fout",
+          description: "Ongeldig e-mailadres",
+          variant: "destructive",
+        })
         return
       }
 
@@ -127,16 +192,39 @@ export default function VerkopersPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        alert(`Fout bij bijwerken: ${error.message}`)
+        toast({
+          title: "Fout",
+          description: `Fout bij bijwerken: ${error.message}`,
+          variant: "destructive",
+        })
         return
       }
 
       setEditingId(null)
       setFormData({ name: "", email: "", is_admin: false, regio_id: "" })
       await fetchSellers()
+
+      if (!error) {
+        await logEvent({
+          type: "agent_edit",
+          status: "success",
+          message: `Verkoper gewijzigd: ${formData.name}`,
+          data: { verkoper_id: id, naam: formData.name, regio_id: formData.regio_id, email: formData.email },
+        })
+      }
     } catch (error) {
       console.error("Error updating seller:", error)
-      alert(`Fout bij bijwerken: ${error}`)
+      toast({
+        title: "Fout",
+        description: `Fout bij bijwerken: ${error}`,
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "agent_edit",
+        status: "error",
+        message: `Fout bij wijzigen verkoper: ${formData.name}`,
+        data: { verkoper_id: id, naam: formData.name, regio_id: formData.regio_id, error },
+      })
     }
   }
 
@@ -151,14 +239,37 @@ export default function VerkopersPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        alert(`Fout bij verwijderen: ${error.message}`)
+        toast({
+          title: "Fout",
+          description: `Fout bij verwijderen: ${error.message}`,
+          variant: "destructive",
+        })
         return
       }
 
       await fetchSellers()
+
+      if (!error) {
+        await logEvent({
+          type: "agent_delete",
+          status: "success",
+          message: `Verkoper verwijderd: ${id}`,
+          data: { verkoper_id: id },
+        })
+      }
     } catch (error) {
       console.error("Error deleting seller:", error)
-      alert(`Fout bij verwijderen: ${error}`)
+      toast({
+        title: "Fout",
+        description: `Fout bij verwijderen: ${error}`,
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "agent_delete",
+        status: "error",
+        message: `Fout bij verwijderen verkoper: ${id}`,
+        data: { verkoper_id: id, error },
+      })
     }
   }
 
@@ -209,6 +320,7 @@ export default function VerkopersPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="Volledige naam"
+                  required
                 />
               </div>
               <div>
@@ -219,6 +331,7 @@ export default function VerkopersPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="email@example.com"
+                  required
                 />
               </div>
               <div>
@@ -227,6 +340,7 @@ export default function VerkopersPage() {
                   value={formData.regio_id}
                   onChange={(e) => setFormData({ ...formData, regio_id: e.target.value })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
                 >
                   <option value="">Selecteer een regio</option>
                   {regions.map((region) => (
@@ -323,6 +437,7 @@ export default function VerkopersPage() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
                       />
                     </div>
                     <div>
@@ -332,6 +447,7 @@ export default function VerkopersPage() {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
                       />
                     </div>
                     <div>
@@ -340,6 +456,7 @@ export default function VerkopersPage() {
                         value={formData.regio_id}
                         onChange={(e) => setFormData({ ...formData, regio_id: e.target.value })}
                         className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
                       >
                         <option value="">Selecteer een regio</option>
                         {regions.map((region) => (

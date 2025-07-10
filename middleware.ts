@@ -3,8 +3,6 @@ import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   // Temporarily disable middleware completely for testing
-  return NextResponse.next()
-  
   // Get the pathname of the request
   const path = req.nextUrl.pathname
 

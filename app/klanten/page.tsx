@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { supabase, handleSupabaseError } from "@/lib/supabase"
 import { Plus, Search, Building2, Phone, Mail, MapPin, Edit, Trash2, X, Save } from "lucide-react"
+import { logEvent } from "@/lib/logEvent"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function KlantenPage() {
   const [clients, setClients] = useState<any[]>([])
@@ -22,6 +24,7 @@ export default function KlantenPage() {
     vatNumber: "",
   })
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchClients()
@@ -45,7 +48,11 @@ export default function KlantenPage() {
 
       if (error) {
         console.error("Error fetching clients:", error)
-        setError(handleSupabaseError(error))
+        toast({
+          title: "Fout",
+          description: error.message || String(error),
+          variant: "destructive",
+        })
         return
       }
 
@@ -53,7 +60,11 @@ export default function KlantenPage() {
       setError(null)
     } catch (error) {
       console.error("Error fetching clients:", error)
-      setError("Fout bij ophalen van klanten")
+      toast({
+        title: "Fout",
+        description: "Fout bij ophalen van klanten",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -66,8 +77,22 @@ export default function KlantenPage() {
       
       // Validate required fields
       if (!formData.name || !formData.phone) {
-        setError("Bedrijfsnaam en telefoon zijn verplicht")
+        toast({
+          title: "Fout",
+          description: "Bedrijfsnaam en telefoon zijn verplicht",
+          variant: "destructive",
+        })
         return
+      }
+
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email)) {
+        toast({ title: 'Fout', description: 'Ongeldig e-mailadres', variant: 'destructive' });
+        return;
+      }
+
+      if (!/^[0-9\-\+ ]{6,}$/.test(formData.phone)) {
+        toast({ title: 'Fout', description: 'Ongeldig telefoonnummer', variant: 'destructive' });
+        return;
       }
 
       const { data, error } = await supabase
@@ -83,7 +108,11 @@ export default function KlantenPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        setError(handleSupabaseError(error))
+        toast({
+          title: "Fout",
+          description: handleSupabaseError(error),
+          variant: "destructive",
+        })
         return
       }
 
@@ -93,9 +122,31 @@ export default function KlantenPage() {
       
       // Refresh the clients list
       await fetchClients()
+      if (!error && data && data[0]) {
+        await logEvent({
+          type: "client_add",
+          status: "success",
+          message: `Nieuwe klant toegevoegd: ${formData.name}`,
+          data: { klantnaam: formData.name, adres: formData.address, email: formData.email, telefoon: formData.phone },
+        })
+        toast({
+          title: "Succes",
+          description: `Nieuwe klant toegevoegd: ${formData.name}`,
+        })
+      }
     } catch (error) {
       console.error("Error adding client:", error)
-      setError("Fout bij toevoegen van klant")
+      toast({
+        title: "Fout",
+        description: "Fout bij toevoegen van klant",
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "client_add",
+        status: "error",
+        message: `Fout bij toevoegen klant: ${formData.name}`,
+        data: { klantnaam: formData.name, adres: formData.address, error },
+      })
     }
   }
 
@@ -104,8 +155,22 @@ export default function KlantenPage() {
       setError(null)
       
       if (!formData.name || !formData.phone) {
-        setError("Bedrijfsnaam en telefoon zijn verplicht")
+        toast({
+          title: "Fout",
+          description: "Bedrijfsnaam en telefoon zijn verplicht",
+          variant: "destructive",
+        })
         return
+      }
+
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email)) {
+        toast({ title: 'Fout', description: 'Ongeldig e-mailadres', variant: 'destructive' });
+        return;
+      }
+
+      if (!/^[0-9\-\+ ]{6,}$/.test(formData.phone)) {
+        toast({ title: 'Fout', description: 'Ongeldig telefoonnummer', variant: 'destructive' });
+        return;
       }
 
       const { error } = await supabase
@@ -121,16 +186,42 @@ export default function KlantenPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        setError(handleSupabaseError(error))
+        toast({
+          title: "Fout",
+          description: handleSupabaseError(error),
+          variant: "destructive",
+        })
         return
       }
 
       setEditingId(null)
       setFormData({ name: "", email: "", phone: "", address: "", vatNumber: "" })
       await fetchClients()
+      if (!error) {
+        await logEvent({
+          type: "client_edit",
+          status: "success",
+          message: `Klant gewijzigd: ${formData.name}`,
+          data: { klantnaam: formData.name, adres: formData.address, email: formData.email, telefoon: formData.phone },
+        })
+        toast({
+          title: "Succes",
+          description: `Klant gewijzigd: ${formData.name}`,
+        })
+      }
     } catch (error) {
       console.error("Error updating client:", error)
-      setError("Fout bij bijwerken van klant")
+      toast({
+        title: "Fout",
+        description: "Fout bij bijwerken van klant",
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "client_edit",
+        status: "error",
+        message: `Fout bij wijzigen klant: ${formData.name}`,
+        data: { klantnaam: formData.name, adres: formData.address, error },
+      })
     }
   }
 
@@ -146,14 +237,40 @@ export default function KlantenPage() {
 
       if (error) {
         console.error("Supabase error:", error)
-        setError(handleSupabaseError(error))
+        toast({
+          title: "Fout",
+          description: handleSupabaseError(error),
+          variant: "destructive",
+        })
         return
       }
 
       await fetchClients()
+      if (!error) {
+        await logEvent({
+          type: "client_delete",
+          status: "success",
+          message: `Klant verwijderd: ${id}`,
+          data: { klant_id: id },
+        })
+        toast({
+          title: "Succes",
+          description: `Klant verwijderd: ${id}`,
+        })
+      }
     } catch (error) {
       console.error("Error deleting client:", error)
-      setError("Fout bij verwijderen van klant")
+      toast({
+        title: "Fout",
+        description: "Fout bij verwijderen van klant",
+        variant: "destructive",
+      })
+      await logEvent({
+        type: "client_delete",
+        status: "error",
+        message: `Fout bij verwijderen klant: ${id}`,
+        data: { klant_id: id, error },
+      })
     }
   }
 
@@ -237,6 +354,7 @@ export default function KlantenPage() {
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="+32 123 456 789"
                   required
+                  pattern="[0-9\-\+ ]{6,}"
                 />
               </div>
               <div>
@@ -341,6 +459,7 @@ export default function KlantenPage() {
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             className="w-full p-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
+                            pattern="[0-9\-\+ ]{6,}"
                           />
                         </div>
                         <div>

@@ -22,16 +22,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       setLoading(true)
-      console.log("AuthContext - Starting auth check")
       
       // Check if user is authenticated with Supabase Auth
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       
-      console.log("AuthContext - Auth user:", authUser)
-      console.log("AuthContext - Auth error:", authError)
-      
       if (authError || !authUser) {
-        console.log("AuthContext - No auth user found")
         setUser(null)
         return
       }
@@ -43,11 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("email", authUser.email)
         .single()
 
-      console.log("AuthContext - Admin user:", adminUser)
-      console.log("AuthContext - Admin error:", adminError)
-
       if (adminError || !adminUser) {
-        console.log("AuthContext - User not found in admin_users table")
         await supabase.auth.signOut()
         setUser(null)
         return
@@ -62,10 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .eq("id", adminUser.id)
 
-      console.log("AuthContext - Setting user:", adminUser)
       setUser(adminUser)
     } catch (error) {
-      console.error("AuthContext - Auth check error:", error)
       setUser(null)
     } finally {
       setLoading(false)
@@ -113,7 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { success: false, error: "Inloggen mislukt" }
     } catch (error) {
-      console.error("Login error:", error)
       return { success: false, error: "Er is een fout opgetreden" }
     } finally {
       setLoading(false)
