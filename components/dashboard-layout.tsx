@@ -19,14 +19,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   console.log('Gebruiker geladen', user)
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-white">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Laden...</span>
-        </div>
-      </div>
-    )
+    return null
   }
   return (
     <SidebarProvider>

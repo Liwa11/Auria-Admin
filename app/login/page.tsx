@@ -22,10 +22,8 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (user && !loading) {
-      router.push("/")
-    }
-  }, [user, loading, router])
+    // Verwijder automatische redirect/spinner als user bestaat
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +56,8 @@ export default function LoginPage() {
         ip,
         device,
       })
-      router.push("/")
+      router.replace("/")
+      return
     } else {
       await logEvent({
         type: "login",
@@ -84,16 +83,7 @@ export default function LoginPage() {
     )
   }
 
-  if (user) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-white">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Doorverwijzen...</span>
-        </div>
-      </div>
-    )
-  }
+  // Verwijder fallback/spinner als user bestaat
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">

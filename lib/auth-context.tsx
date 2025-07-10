@@ -97,12 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        <span className="animate-spin">⏳</span>
-        <span className="ml-2">Laden...</span>
-      </div>
-    )
+    return null
   }
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
