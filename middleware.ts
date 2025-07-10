@@ -6,15 +6,7 @@ export async function middleware(req: NextRequest) {
   // Get the pathname of the request
   const path = req.nextUrl.pathname
 
-  // Define public paths that don't require authentication
-  const isPublicPath = path === '/login'
-
-  // Check for Supabase auth cookies
-  const hasAuthCookie = req.cookies.has('sb-fuvtitcjzovzkknuuhcw-auth-token') || 
-                       req.cookies.has('supabase-auth-token') ||
-                       req.cookies.has('sb-auth-token')
-
-  // Verwijder alle login checks en redirects
+  // Verwijder alle login checks en verwijzingen
 
   return NextResponse.next()
 }
