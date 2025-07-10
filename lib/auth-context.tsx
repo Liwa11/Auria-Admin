@@ -1,116 +1,74 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { supabase, AdminUser } from "./supabase"
-import { useRouter } from "next/navigation"
-import { usePathname } from "next/navigation"
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { supabase } from "./supabase"
+import { useRouter, usePathname } from "next/navigation"
 
 interface AuthContextType {
-  user: AdminUser | null
+  user: any
   loading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  logout: () => Promise<void>
-  checkAuth: () => Promise<void>
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
-  const checkAuth = async () => {
-    setLoading(true)
-    try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-      if (authError || !authUser) {
-        setUser(null)
-        setLoading(false)
-        return
-      }
-      // Check of user bestaat in admin_users (op id)
-      const { data: adminUser } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("id", String(authUser.id))
-        .maybeSingle()
-      if (!adminUser) {
-        console.log("Gebruiker niet gevonden in admin_users:", authUser.id)
-      }
-      setUser(adminUser || null)
-      setLoading(false)
-    } catch {
-      setUser(null)
-      setLoading(false)
-    }
-  }
-
-  const login = async (email: string, password: string) => {
-    setLoading(true)
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error || !data.user) {
-        setUser(null)
-        setLoading(false)
-        return { success: false, error: "Ongeldige inloggegevens" }
-      }
-      // Check of user bestaat in admin_users (op id)
-      const { data: adminUser } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("id", String(data.user.id))
-        .maybeSingle()
-      if (!adminUser) {
-        console.log("Gebruiker niet gevonden in admin_users:", data.user.id)
-      }
-      setUser(adminUser || null)
-      setLoading(false)
-      if (adminUser) {
-        return { success: true }
-      } else {
-        return { success: false, error: "Geen toegang" }
-      }
-    } catch {
-      setUser(null)
-      setLoading(false)
-      return { success: false, error: "Er is een fout opgetreden" }
-    }
-  }
-
-  const logout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-  }
-
   useEffect(() => {
-    checkAuth()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        await checkAuth()
-      } else if (event === "SIGNED_OUT") {
-        setUser(null)
-      }
+    const getUser = async () => {
+      setLoading(true)
+      const { data, error } = await supabase.auth.getUser()
+      setUser(data?.user || null)
+      setLoading(false)
+    }
+    getUser()
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+      setLoading(false)
     })
-    return () => subscription.unsubscribe()
+    return () => {
+      listener?.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
-    if (loading) return
-    if (!user) {
-      if (pathname !== "/login") router.replace("/login")
-    } else {
-      if (pathname === "/login") router.replace("/")
+    if (!loading) {
+      if (!user && pathname !== "/login") {
+        router.replace("/login")
+      }
+      if (user && pathname === "/login") {
+        router.replace("/")
+      }
     }
   }, [user, loading, pathname, router])
 
-  if (loading) return null
-  // Op loginpagina: altijd children tonen als user niet geldig is
-  if (!user && pathname === "/login") return <>{children}</>
-  if (!user) return null
+  const signIn = async (email: string, password: string) => {
+    setLoading(true)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error || !data.user) {
+      setLoading(false)
+      return { success: false, error: error?.message || "Ongeldige inloggegevens" }
+    }
+    setUser(data.user)
+    setLoading(false)
+    return { success: true }
+  }
+
+  const signOut = async () => {
+    setLoading(true)
+    await supabase.auth.signOut()
+    setUser(null)
+    setLoading(false)
+    router.replace("/login")
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )
@@ -118,8 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider")
   return context
 } 

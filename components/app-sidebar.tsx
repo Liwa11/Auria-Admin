@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 const menuItems = [
   {
@@ -95,6 +96,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { state, toggleSidebar } = useSidebar()
   const isCollapsed = state === "collapsed"
+  const { signOut } = useAuth()
 
   return (
     <Sidebar collapsible="icon" className="bg-gray-800 border-r border-gray-700">
@@ -145,6 +147,20 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        {/* Logout knop onderaan */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <Button
+              onClick={signOut}
+              variant="outline"
+              size="sm"
+              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white mt-4"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {!isCollapsed && "Uitloggen"}
+            </Button>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
