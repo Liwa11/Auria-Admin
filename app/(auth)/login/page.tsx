@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn, user, loading } = useAuth()
+  const { signIn, user } = useAuth()
   const router = useRouter()
 
-  if (user && !loading) {
-    router.replace("/")
-    return null
-  }
+  useEffect(() => {
+    if (user) {
+      router.replace("/")
+    }
+  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,21 +30,14 @@ export default function LoginPage() {
     setIsLoading(true)
     const { success, error: signInError } = await signIn(email, password)
     setIsLoading(false)
-    if (success) {
-      router.replace("/")
-    } else {
+    if (!success) {
       setError(signInError || "Inloggen mislukt")
+    } else {
+      router.replace("/")
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">Laden...</span>
-      </div>
-    )
-  }
+  if (user) return null
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">

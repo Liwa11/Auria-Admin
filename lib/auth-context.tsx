@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { supabase } from "./supabase"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   user: any
@@ -17,12 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
     const getUser = async () => {
       setLoading(true)
-      const { data, error } = await supabase.auth.getUser()
+      const { data } = await supabase.auth.getUser()
       setUser(data?.user || null)
       setLoading(false)
     }
@@ -32,20 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
     return () => {
-      listener?.unsubscribe()
+      listener?.subscription.unsubscribe()
     }
   }, [])
 
   useEffect(() => {
-    if (!loading) {
-      if (!user && pathname !== "/login") {
-        router.replace("/login")
-      }
-      if (user && pathname === "/login") {
-        router.replace("/")
-      }
+    if (user === null && !loading) {
+      router.replace("/login")
     }
-  }, [user, loading, pathname, router])
+  }, [user, loading, router])
 
   const signIn = async (email: string, password: string) => {
     setLoading(true)
@@ -64,7 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setLoading(false)
-    router.replace("/login")
   }
 
   return (
